@@ -302,35 +302,13 @@ export function apply(s, actorId, type, payload = {}, now = Date.now()) {
     assert(host, "Only the presenter controls the phases.");
     const idx = PHASES.indexOf(s.phase);
     assert(idx >= 0 && idx < 7, "This game is complete.");
-    if (s.phase === "lobby")
-      assert(customers(s).length > 0, "At least one customer must join.");
     if (s.phase === "reaction") {
-      const unfinished = customers(s).filter(
-        (p) => !p.budgetChoice || !p.preferenceSaved,
-      );
-      assert(
-        unfinished.length === 0 || payload.force === true,
-        "Some customers are still choosing budgets or preferences.",
-      );
       customers(s).forEach((p) => {
         if (!p.budget) p.budget = 600;
       });
       startPlanning(s, 1);
     }
-    if (s.phase === "plan1" || s.phase === "plan2") {
-      assert(sellers(s).length === 3, "Wait for all three sellers.");
-      assert(
-        sellers(s).every((p) => p.ready) || payload.force === true,
-        "Some sellers have not opened their shop.",
-      );
-    }
-    if (s.phase === "shop1" || s.phase === "shop2") {
-      assert(
-        customers(s).every((p) => p.done) || payload.force === true,
-        "Some customers are still shopping.",
-      );
-      endRound(s);
-    }
+    if (s.phase === "shop1" || s.phase === "shop2") endRound(s);
     if (s.phase === "result1") startPlanning(s, 2);
     s.phase = PHASES[idx + 1];
   } else if (type === "FORCE_END") {

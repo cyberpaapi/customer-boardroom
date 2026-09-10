@@ -145,7 +145,7 @@ function host() {
   if (state.phase === "lobby")
     center = `<div class="host-grid"><section class="card qr-card"><h2>Everyone except the three sellers</h2>${qr(customerURL, "Scan to join as a customer")}<div class="room-code">${state.code}</div><p>Enter a name. Leave this screen open.</p></section><section><h2>Run your classroom market.</h2><ol class="run-list"><li>Customers join and choose a spending range in INR.</li><li>They privately choose their PC preferences.</li><li>Invite three sellers using their separate QR codes.</li><li>Run the first market with no customer insights.</li><li>Reveal anonymous insights. Repeat with the same budgets.</li></ol><p class="note">Individual budget answers stay private. Customer joining closes when you start the survey.</p></section></div>`;
   else if (state.phase === "reaction")
-    center = `<section class="card"><h2>The class is choosing its budgets.</h2><p>Wait for both progress counters to finish. Customers choose their PC priorities after selecting a budget.</p>${stats(
+    center = `<section class="card"><h2>The class is choosing its budgets.</h2><p>Advance whenever you are ready; unfinished responses do not block the session. Customers choose their PC priorities after selecting a budget.</p>${stats(
       [
         [`${c.earned}/${c.customers}`, "budgets selected"],
         [`${c.preferences}/${c.customers}`, "preferences saved"],
@@ -183,7 +183,7 @@ function host() {
       [`${c.shopsReady}/3`, "shops ready"],
     ]) +
     center +
-    `<section class="host-controls">${nextNames[state.phase] ? btn(nextNames[state.phase], "next", "primary") : btn("Play again with this class", "again", "primary")}${nextNames[state.phase] ? btn("Move on early…", "force-next", "ghost") : ""}${state.phase !== "ended" ? btn("End session…", "end", "ghost small") : ""}</section><details class="card roster"><summary>Classroom attendance & progress</summary>${(state.roster || []).map((p) => `<div><span>${esc(p.name)} <small>${p.role}</small></span><span>${p.role === "customer" ? (p.earned ? "Budget ✓ " : "") + (p.preferences ? "Preferences ✓ " : "") + (p.done ? "Finished ✓" : "") : p.ready ? "Shop ready ✓" : ""}</span></div>`).join("")}</details>`
+    `<section class="host-controls">${nextNames[state.phase] ? btn(nextNames[state.phase], "next", "primary") : btn("Play again with this class", "again", "primary")}${state.phase !== "ended" ? btn("End session…", "end", "ghost small") : ""}</section><details class="card roster"><summary>Classroom attendance & progress</summary>${(state.roster || []).map((p) => `<div><span>${esc(p.name)} <small>${p.role}</small></span><span>${p.role === "customer" ? (p.earned ? "Budget ✓ " : "") + (p.preferences ? "Preferences ✓ " : "") + (p.done ? "Finished ✓" : "") : p.ready ? "Shop ready ✓" : ""}</span></div>`).join("")}</details>`
   );
 }
 function sellerList() {

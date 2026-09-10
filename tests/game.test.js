@@ -219,3 +219,12 @@ test("budget survey records exact range, validates input and keeps answers priva
     1,
   );
 });
+
+test('presenter advances immediately through every phase without waiting for participants',()=>{
+ const s=setup();
+ for(const phase of ['reaction','plan1','shop1','result1','plan2','shop2','final']){
+ apply(s,'h','NEXT');assert.equal(s.phase,phase);
+ }
+ assert.equal(s.players[1].budget,600);
+ const empty=createState('ABC234','h',0);apply(empty,'h','NEXT');assert.equal(empty.phase,'reaction');
+});
