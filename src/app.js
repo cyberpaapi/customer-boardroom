@@ -7,7 +7,7 @@ const params=new URLSearchParams(location.search),roomParam=(params.get('room')|
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=n=>Number(n||0).toLocaleString('en-IN');
 const icon=(name)=>({cpu:'◈',gpu:'▣',ram:'▤',ssd:'▰',case:'▥'}[name]||'◆');
-const client=new RoomClient(s=>{const was=state;state=s;if(was?.phase!==s.phase){cart={};lastTrial='';if(reaction){clearTimeout(reactTimer);reaction=null;}lastPhase=s.phase;}const editing=was?.phase===s.phase&&((s.me.role==='seller'&&s.phase.startsWith('plan'))||(s.me.role==='customer'&&s.phase==='reaction'&&s.me.trials.length===5));if(!reaction&&!editing)render();},s=>{status=s;const el=document.querySelector('#connection');if(el)el.textContent=s;});
+const client=new RoomClient(s=>{const was=state;state=s;if(was?.phase!==s.phase){cart={};lastTrial='';if(reaction){clearTimeout(reactTimer);reaction=null;}lastPhase=s.phase;}const editing=was?.phase===s.phase&&((s.me.role==='seller'&&s.phase.startsWith('plan'))||(s.me.role==='customer'&&s.phase==='reaction'&&s.me.trials.length===5));if(!reaction&&!editing)render();if(was?.phase!==s.phase)window.scrollTo(0,0);},s=>{status=s;const el=document.querySelector('#connection');if(el)el.textContent=s;});
 const btn=(text,action,cls='',disabled=false)=>`<button class="button ${cls}" data-action="${action}" ${disabled||busy?'disabled':''}>${text}</button>`;
 const pill=t=>`<span class="pill">${t}</span>`;
 function header(){return `<header><a class="brand" href="${location.pathname}"><span class="brand-mark">b.</span><span>the boardroom<span class="brand-sub">A CUSTOMER EXPERIMENT</span></span></a><span class="connection" id="connection">${esc(status)}</span></header>`;}
@@ -57,7 +57,7 @@ async function tapReaction(){if(busy||!state||state.phase!=='reaction')return;
  if(!reaction){if(state.me.challenge){await task(()=>client.act('TRIAL_END',{nonce:state.me.challenge.nonce,ms:2000,early:true}));lastTrial='Interrupted attempt recorded as 2,000 ms.';render();return;}
  busy=true;try{await client.act('TRIAL_START');const ch=state.me.challenge;reaction={phase:'waiting',nonce:ch.nonce};busy=false;render();reactTimer=setTimeout(()=>requestAnimationFrame(()=>{if(!reaction)return;const pad=document.querySelector('#reaction-pad');reaction.phase='green';pad.classList.remove('waiting');pad.classList.add('green');pad.querySelector('.signal').textContent='●';pad.querySelector('strong').textContent='TAP NOW';reaction.start=performance.now();}),ch.delay);}catch(e){busy=false;error=e.message;render();}return;
  }
- const early=reaction.phase!=='green',ms=early?2000:Math.round(performance.now()-reaction.start),nonce=reaction.nonce;clearTimeout(reactTimer);reaction=null;lastTrial=early?'Too early. This attempt counts as 2,000 ms.':`${ms} ms · ${state.me.trials.length===4?'Income calculated.':'Ready for the next attempt.'}`;await task(()=>client.act('TRIAL_END',{nonce,ms,early}));
+ const early=reaction.phase!=='green',ms=early?2000:Math.min(2000,Math.round(performance.now()-reaction.start)),nonce=reaction.nonce;clearTimeout(reactTimer);reaction=null;lastTrial=early?'Too early. This attempt counts as 2,000 ms.':`${ms} ms · ${state.me.trials.length===4?'Income calculated.':'Ready for the next attempt.'}`;await task(()=>client.act('TRIAL_END',{nonce,ms,early}));
 }
 root.addEventListener('pointerdown',e=>{if(e.target.closest('#reaction-pad')){e.preventDefault();tapReaction();}});
 root.addEventListener('keydown',e=>{if(e.target.closest('#reaction-pad')&&(e.key===' '||e.key==='Enter')){e.preventDefault();if(!e.repeat)tapReaction();}});
@@ -78,3 +78,4 @@ root.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.di
 async function recover(){if(!client.credential||document.hidden)return;try{await client.refresh();await client.connect();}catch(e){error=e.message;render();}}
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&reaction){clearTimeout(reactTimer);reaction=null;lastTrial='The attempt was interrupted. Continue to record it.';}if(!document.hidden)recover();});window.addEventListener('online',recover);window.addEventListener('offline',()=>{status='Offline · reconnect before playing';render();});window.addEventListener('pageshow',e=>{if(e.persisted)recover();});
 render();if(roomParam&&localStorage.getItem('boardroom:'+roomParam))task(()=>client.restore(roomParam));
+
