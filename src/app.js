@@ -11,6 +11,7 @@ let builderStep = 0,
 import QRCode from "qrcode";
 import { RoomClient } from "./network.js";
 import {
+  BUDGET_OPTIONS,
   referencePrice,
   offerEnabled,
   PARTS,
@@ -51,7 +52,8 @@ const esc = (v) =>
         c
       ],
   );
-const money = (n) => Number(n || 0).toLocaleString("en-IN");
+const money = (n) => "₹" + (Number(n || 0) * 100).toLocaleString("en-IN");
+let budgetPick = "";
 const icon = (name) =>
   ({ cpu: "◈", gpu: "▣", ram: "▤", ssd: "▰", case: "▥" })[name] || "◆";
 const client = new RoomClient(
@@ -74,7 +76,7 @@ const client = new RoomClient(
       ((s.me.role === "seller" && s.phase.startsWith("plan")) ||
         (s.me.role === "customer" &&
           s.phase === "reaction" &&
-          s.me.trials.length === 5));
+          !!s.me.budgetChoice));
     if (!reaction && !editing) render();
     if (was?.phase !== s.phase) window.scrollTo(0, 0);
   },
@@ -103,7 +105,7 @@ function shell(html) {
 }
 function home() {
   const saved = localStorage.getItem("boardroom:last");
-  return `<section class="home-grid"><div class="home-copy"><div class="eyebrow">THE CLASSROOM PC MARKET</div><h1>Quick hands.<br>Smart builds.<br><em>Better business.</em></h1><p class="lead">Earn your income. Build your dream PC.<br>Can three sellers figure out what you want?</p><div class="steps"><span><b>01</b> React</span><span><b>02</b> Build</span><span><b>03</b> Discover</span></div></div><div class="hero-art"><img src="${import.meta.env.BASE_URL}hero.webp" alt="Playful purple PC, components, gold coins and a green reaction button" width="1200" height="800"></div><section class="entry card"><div class="tabs">${btn("Join the class", "join-tab", entry === "join" ? "active" : "ghost")}${btn("Present a session", "host-tab", entry === "host" ? "active" : "ghost")}</div>${entry === "join" ? `<h2>${invite ? "Your shop starts here." : "Your next PC starts here."}</h2><p>${invite ? "You are joining one of the three seller places." : "Scan the classroom QR or enter your room code."}</p><form id="join-form"><label>Your name<input id="name" name="name" required maxlength="24" autocomplete="nickname" placeholder="Name + initial"></label><label>Room code<input id="room" name="room" required maxlength="6" minlength="6" value="${esc(roomParam)}" placeholder="ABC234" autocapitalize="characters" style="text-transform:uppercase"></label><button class="button primary" ${busy ? "disabled" : ""}>${invite ? "Join as a seller" : "Let’s play"} <span>↗</span></button></form>` : `<h2>Bring the market to life.</h2><p>Create a room, project the customer QR, then invite three sellers after the income challenge.</p>${btn("Create a classroom", "create", "primary")}<p class="fine">No account needed. No customer-count cap. Rooms last 24 hours. Keep this browser open as your presenter control.</p>`}${saved && !roomParam ? btn("Resume room " + esc(saved), "resume-last", "ghost small") : ""}</section></section><section class="how-grid"><article><span class="number">01</span><h3>Income has a pulse.</h3><p>Five green-light taps earn your budget. Under 200 ms, rewards rise exponentially.</p></article><article><span class="number">02</span><h3>Build what you value.</h3><p>Mix parts from three shops. Performance, looks or value—you choose.</p></article><article><span class="number">03</span><h3>Know more. Decide better.</h3><p>Two markets, the same budgets. Round two gives sellers anonymous customer insights.</p></article></section>`;
+  return `<section class="home-grid"><div class="home-copy"><div class="eyebrow">THE CLASSROOM PC MARKET</div><h1>Your budget.<br>Your priorities.<br><em>Better business.</em></h1><p class="lead">Choose your budget. Build your next PC.<br>Can three sellers figure out what you want?</p><div class="steps"><span><b>01</b> Choose</span><span><b>02</b> Build</span><span><b>03</b> Discover</span></div></div><div class="hero-art"><img src="${import.meta.env.BASE_URL}hero.webp" alt="Playful purple PC, components, gold INR and a green reaction button" width="1200" height="800"></div><section class="entry card"><div class="tabs">${btn("Join the class", "join-tab", entry === "join" ? "active" : "ghost")}${btn("Present a session", "host-tab", entry === "host" ? "active" : "ghost")}</div>${entry === "join" ? `<h2>${invite ? "Your shop starts here." : "Your next PC starts here."}</h2><p>${invite ? "You are joining one of the three seller places." : "Scan the classroom QR or enter your room code."}</p><form id="join-form"><label>Your name<input id="name" name="name" required maxlength="24" autocomplete="nickname" placeholder="Name + initial"></label><label>Room code<input id="room" name="room" required maxlength="6" minlength="6" value="${esc(roomParam)}" placeholder="ABC234" autocapitalize="characters" style="text-transform:uppercase"></label><button class="button primary" ${busy ? "disabled" : ""}>${invite ? "Join as a seller" : "Let’s play"} <span>↗</span></button></form>` : `<h2>Bring the market to life.</h2><p>Create a room, project the customer QR, then invite three sellers after the budget survey.</p>${btn("Create a classroom", "create", "primary")}<p class="fine">No account needed. No customer-count cap. Rooms last 24 hours. Keep this browser open as your presenter control.</p>`}${saved && !roomParam ? btn("Resume room " + esc(saved), "resume-last", "ghost small") : ""}</section></section><section class="how-grid"><article><span class="number">01</span><h3>What would you spend?</h3><p>Choose your spending range in INR, then the components you value.</p></article><article><span class="number">02</span><h3>Build what you value.</h3><p>Mix parts from three shops. Performance, looks or value—you choose.</p></article><article><span class="number">03</span><h3>Know more. Decide better.</h3><p>Two markets, the same budgets. Round two gives sellers anonymous customer insights.</p></article></section>`;
 }
 function title(kicker, title, subtitle = "") {
   return `<div class="page-title"><div class="eyebrow">${kicker}</div><h1>${title}</h1>${subtitle ? `<p class="lead">${subtitle}</p>` : ""}</div>`;
@@ -141,23 +143,23 @@ function host() {
     encodeURIComponent(client.invites[sellerQR] || "");
   let center = "";
   if (state.phase === "lobby")
-    center = `<div class="host-grid"><section class="card qr-card"><h2>Everyone except the three sellers</h2>${qr(customerURL, "Scan to join as a customer")}<div class="room-code">${state.code}</div><p>Enter a name. Leave this screen open.</p></section><section><h2>Run your classroom market.</h2><ol class="run-list"><li>Customers join and play five reaction attempts.</li><li>They privately choose their PC preferences.</li><li>Invite three sellers using their separate QR codes.</li><li>Run the first market with no customer insights.</li><li>Reveal anonymous insights. Repeat with the same budgets.</li></ol><p class="note">No reaction averages or scores appear on seller screens. Customer joining closes when you start the challenge.</p></section></div>`;
+    center = `<div class="host-grid"><section class="card qr-card"><h2>Everyone except the three sellers</h2>${qr(customerURL, "Scan to join as a customer")}<div class="room-code">${state.code}</div><p>Enter a name. Leave this screen open.</p></section><section><h2>Run your classroom market.</h2><ol class="run-list"><li>Customers join and choose a spending range in INR.</li><li>They privately choose their PC preferences.</li><li>Invite three sellers using their separate QR codes.</li><li>Run the first market with no customer insights.</li><li>Reveal anonymous insights. Repeat with the same budgets.</li></ol><p class="note">Individual budget answers stay private. Customer joining closes when you start the survey.</p></section></div>`;
   else if (state.phase === "reaction")
-    center = `<section class="card"><h2>The class is earning its buying power.</h2><p>Wait for both progress counters to finish. Customers choose their own PC priorities after the five attempts.</p>${stats(
+    center = `<section class="card"><h2>The class is choosing its budgets.</h2><p>Wait for both progress counters to finish. Customers choose their PC priorities after selecting a budget.</p>${stats(
       [
-        [`${c.earned}/${c.customers}`, "income earned"],
+        [`${c.earned}/${c.customers}`, "budgets selected"],
         [`${c.preferences}/${c.customers}`, "preferences saved"],
       ],
-    )}<p class="note">If you move on early, unfinished customers receive 600 coins. Their default wishlist is included in the insight counts.</p></section>`;
+    )}<p class="note">If you move on early, unanswered budgets are excluded from the survey totals.</p></section>`;
   else if (state.phase === "plan1")
     center = `<div class="host-grid"><section class="card qr-card"><h2>Invite the three sellers</h2><div class="tabs">${[0, 1, 2].map((n) => btn("Seller " + (n + 1), "seller-qr-" + n, sellerQR === n ? "active" : "ghost")).join("")}</div>${qr(sellerURL, "Seller " + (sellerQR + 1) + " · one person per invitation")}<p class="fine">Display each QR to its seller. Claimed invitations cannot create another seat.</p></section><section class="card"><h2>Let them make their guesses.</h2><p>Each seller chooses which components to offer and sets prices. Every offered component has unlimited supply.</p><p>Profit is the margin earned on actual sales. There are no inventory costs or supply shortages.</p>${sellerList()}<p class="note">Sellers see neither customer budgets nor preferences in round one.</p></section></div>`;
   else if (state.phase.startsWith("shop"))
     center = `<section class="card"><h2>The market is open.</h2>${stats([
       [`${c.finished}/${c.customers}`, "customers finished"],
       [state.round, "market round"],
-    ])}<p>Customers can mix parts from all three shops. Every completed purchase contains five parts. They may also keep their coins and pass.</p></section>`;
+    ])}<p>Customers can mix parts from all three shops. Every completed purchase contains five parts. They may also keep their money and pass.</p></section>`;
   else if (state.phase === "plan2")
-    center = `<section class="card"><h2>Now the customer is in the boardroom.</h2><p>Sellers can see anonymous budget bands, intended uses and the components customers wanted. They can revise their offers and prices. Customers keep their original income and wishlist.</p>${sellerList()}</section>${insightPanel()}`;
+    center = `<section class="card"><h2>Now the customer is in the boardroom.</h2><p>Sellers can see anonymous budget bands, intended uses and the components customers wanted. They can revise their offers and prices. Customers keep their original budget and wishlist.</p>${sellerList()}</section>${insightPanel()}`;
   if (
     state.phase === "result1" ||
     state.phase === "final" ||
@@ -165,8 +167,8 @@ function host() {
   )
     center += results();
   const nextNames = {
-    lobby: "Start the reaction challenge",
-    reaction: "Finish income · invite sellers",
+    lobby: "Start the budget survey",
+    reaction: "Finish survey · invite sellers",
     plan1: "Open market one",
     shop1: "Close market · show results",
     result1: "Reveal insights · plan round two",
@@ -181,7 +183,7 @@ function host() {
       [`${c.shopsReady}/3`, "shops ready"],
     ]) +
     center +
-    `<section class="host-controls">${nextNames[state.phase] ? btn(nextNames[state.phase], "next", "primary") : btn("Play again with this class", "again", "primary")}${nextNames[state.phase] ? btn("Move on early…", "force-next", "ghost") : ""}${state.phase !== "ended" ? btn("End session…", "end", "ghost small") : ""}</section><details class="card roster"><summary>Classroom attendance & progress</summary>${(state.roster || []).map((p) => `<div><span>${esc(p.name)} <small>${p.role}</small></span><span>${p.role === "customer" ? (p.earned ? "Income ✓ " : "") + (p.preferences ? "Preferences ✓ " : "") + (p.done ? "Finished ✓" : "") : p.ready ? "Shop ready ✓" : ""}</span></div>`).join("")}</details>`
+    `<section class="host-controls">${nextNames[state.phase] ? btn(nextNames[state.phase], "next", "primary") : btn("Play again with this class", "again", "primary")}${nextNames[state.phase] ? btn("Move on early…", "force-next", "ghost") : ""}${state.phase !== "ended" ? btn("End session…", "end", "ghost small") : ""}</section><details class="card roster"><summary>Classroom attendance & progress</summary>${(state.roster || []).map((p) => `<div><span>${esc(p.name)} <small>${p.role}</small></span><span>${p.role === "customer" ? (p.earned ? "Budget ✓ " : "") + (p.preferences ? "Preferences ✓ " : "") + (p.done ? "Finished ✓" : "") : p.ready ? "Shop ready ✓" : ""}</span></div>`).join("")}</details>`
   );
 }
 function sellerList() {
@@ -194,9 +196,9 @@ function customer() {
       title(
         "YOU’RE IN · ROOM " + state.code,
         `Hey, ${esc(p.name)}.`,
-        "Your next PC starts with a quick reaction.",
+        "Your next PC starts with your budget.",
       ) +
-      `<section class="waiting card"><img class="mini-art" src="${import.meta.env.BASE_URL}hero.webp" alt="Colorful PC setup"><h2>Waiting for the presenter</h2><p>Keep this page open. You’ll tap when the screen turns green, earn coins, then build your PC.</p>${pill(state.counts.customers + " customers are here")}</section>`
+      `<section class="waiting card"><img class="mini-art" src="${import.meta.env.BASE_URL}hero.webp" alt="Colorful PC setup"><h2>Waiting for the presenter</h2><p>Keep this page open. You’ll choose your spending range, then build your PC.</p>${pill(state.counts.customers + " customers are here")}</section>`
     );
   if (state.phase === "reaction") return reactionScreen();
   if (state.phase === "shop1" || state.phase === "shop2") return market();
@@ -216,12 +218,12 @@ function customer() {
   return (
     title(
       "YOUR BUDGET IS PRIVATE",
-      `${money(p.budget)} coins. Your choices.`,
+      `${money(p.budget)} INR. Your choices.`,
       state.phase === "plan2"
         ? "A fresh market is coming. Your original budget is restored."
         : "The three sellers are choosing their offers.",
     ) +
-    `<section class="card"><h2>Your PC wishlist</h2><p>${esc(p.use)} · You can adjust what you actually buy when the market opens.</p>${buildList(p.wishlist)}<div class="note">${state.phase === "plan2" ? "Sellers now see anonymous budget bands and preferences. They still cannot see your reaction results." : "Sellers do not know your budget or preferences yet."}</div></section>`
+    `<section class="card"><h2>Your PC wishlist</h2><p>${esc(p.use)} · You can adjust what you actually buy when the market opens.</p>${buildList(p.wishlist)}<div class="note">${state.phase === "plan2" ? "Sellers now see anonymous budget bands and preferences. They cannot see your individual answer." : "Sellers do not know your budget or preferences yet."}</div></section>`
   );
 }
 function buildList(build) {
@@ -229,30 +231,17 @@ function buildList(build) {
 }
 function reactionScreen() {
   const p = state.me;
-  if (p.trials.length === 5) {
-    if (prefKey !== p.id) {
-      prefKey = p.id;
-      wish = { ...p.wishlist };
-      if (
-        Object.values(wish).reduce(
-          (n, id) => n + referencePrice(BY_ID[id]),
-          0,
-        ) > p.budget
-      )
-        wish = blankBuild();
-      previewBuild = { ...wish };
-      use = p.use;
-    }
-    return buildScreen("preferences");
+  if (!p.budgetChoice) {
+    return `<section class="budget-survey"><div class="eyebrow">YOUR NEXT COMPUTER · INR</div><h1>How much would you spend on your next computer?</h1><img class="budget-hero" src="${import.meta.env.BASE_URL}hero.webp" alt="A complete desktop PC"><div class="budget-options">${BUDGET_OPTIONS.map((o, i) => `<button data-budget="${o.id}" class="component-option choice-${i % 3} ${budgetPick === o.id ? "selected" : ""}" aria-pressed="${budgetPick === o.id}"><b>${o.label}</b><span>${budgetPick === o.id ? "✓" : "→"}</span></button>`).join("")}</div><p>Your answer stays private in round one. Sellers see anonymous totals in round two.</p><button class="button primary" data-action="save-budget" ${!budgetPick || busy ? "disabled" : ""}>Next →</button></section>`;
   }
-  return (
-    title(
-      `REACTION ${p.trials.length + 1} OF 5`,
-      "Wait. Green. Tap.",
-      "Five taps. One challenge. Earn your coins.",
-    ) +
-    `<section class="reaction-card"><button id="reaction-pad" class="reaction-pad ${reaction?.phase || "idle"}" ${busy ? "disabled" : ""}><span class="signal">${reaction?.phase === "green" ? "●" : "○"}</span><strong>${reaction?.phase === "green" ? "TAP NOW" : reaction?.phase === "waiting" ? "Wait for green…" : p.challenge ? "Interrupted attempt" : p.trials.length ? "Next green light…" : "Ready when you are."}</strong><span>${reaction ? "Tap only after the color changes." : p.challenge ? "Tap to record this interrupted attempt and continue." : p.trials.length ? "The next attempt starts automatically." : "Tap here to begin."}</span></button><p id="last-trial" aria-live="polite">${esc(lastTrial)}</p><div class="trial-dots">${Array.from({ length: 5 }, (_, i) => `<span class="${i < p.trials.length ? "complete" : ""}">${i < p.trials.length ? p.trials[i] + " ms" : i + 1}</span>`).join("")}</div></section><section class="reaction-info"><p><b>Too early?</b> That attempt counts as 2,000 ms. There are no restarts.</p><p><b>The reward curve:</b> 300 ms → ${money(coins(300))} coins · 200 ms → ${money(coins(200))} · 150 ms → ${money(coins(150))}.</p><p class="fine">Play on your own device. Timing uses your screen, not network round-trip speed. Device latency can affect results; this is a classroom simulation, not a scientific reflex test.</p></section>`
-  );
+  if (prefKey !== p.id + ":" + p.budgetChoice) {
+    prefKey = p.id + ":" + p.budgetChoice;
+    wish = { ...p.wishlist };
+    previewBuild = { ...wish };
+    use = p.use;
+    builderStep = 0;
+  }
+  return buildScreen("preferences");
 }
 function insightPanel() {
   const i = state.insights;
@@ -273,7 +262,7 @@ function seller() {
       title(
         "SELLER · " + esc(p.name),
         "Your market is coming.",
-        "The class is earning its income. Customer scores and budgets are private.",
+        "The class is choosing its budgets and preferences. Answers are private in round one.",
       ) +
       `<section class="card"><h2>Your job: make the most profit.</h2><p>Choose components and prices that customers want. Supply is unlimited; profit comes from the margin on each sale.</p></section>`
     );
@@ -308,7 +297,7 @@ function seller() {
         .filter(offerEnabled)
         .map(
           (o) =>
-            `<div class="stock-line"><span>${BY_ID[o.part].name}</span><span>${o.sold} sold · ${money(o.price)} coins</span></div>`,
+            `<div class="stock-line"><span>${BY_ID[o.part].name}</span><span>${o.sold} sold · ${money(o.price)} INR</span></div>`,
         )
         .join(
           "",
@@ -360,13 +349,13 @@ function market() {
     return (
       title(
         "PURCHASE COMPLETE",
-        state.order ? "Your PC is yours." : "You kept your coins.",
+        state.order ? "Your PC is yours." : "You kept your money.",
         "Wait for the presenter to close the market.",
       ) +
       `<section class="card">${state.order ? buildList(Object.fromEntries(state.order.lines.map((l) => [BY_ID[l.part].category, l.part]))) : "<h2>No purchase this round.</h2>"}${stats(
         [
-          [money(state.order?.total || 0), "coins spent"],
-          [money(p.budget - (state.order?.total || 0)), "coins left"],
+          [money(state.order?.total || 0), "spent (INR)"],
+          [money(p.budget - (state.order?.total || 0)), "remaining (INR)"],
         ],
       )}<p>${state.round === 1 ? "Your original budget will return for round two." : "Both markets are complete. The results are next."}</p></section>`
     );
@@ -381,11 +370,11 @@ function cartTotal() {
 function results() {
   const rs = state.results,
     final = !!rs[2];
-  return `<section class="results"><div class="section-heading"><h2>${final ? "Did insight improve profit?" : "The first market, by the numbers."}</h2><p>${final ? "Same customers. Same income. Unlimited supply. Compare what actually happened." : "Prices, offered components and customer choices all shaped this result."}</p></div><div class="result-grid">${state.sellers
+  return `<section class="results"><div class="section-heading"><h2>${final ? "Did insight improve profit?" : "The first market, by the numbers."}</h2><p>${final ? "Same customers. Same budgets. Unlimited supply. Compare what actually happened." : "Prices, offered components and customer choices all shaped this result."}</p></div><div class="result-grid">${state.sellers
     .map((s) => {
       const a = rs[1]?.sellers.find((x) => x.id === s.id),
         b = rs[2]?.sellers.find((x) => x.id === s.id);
-      return `<article class="card result-card"><span class="eyebrow">${esc(s.name)}</span><h3>${money((b || a)?.profit)} <small>coins profit</small></h3>${a ? `<div class="stock-line"><span>Round 1 · blind</span><b>${money(a.profit)}</b></div>` : ""}${b ? `<div class="stock-line"><span>Round 2 · informed</span><b>${money(b.profit)}</b></div><div class="profit-change ${b.profit - a.profit >= 0 ? "positive" : "negative"}">${b.profit >= a.profit ? "+" : ""}${money(b.profit - a.profit)} change</div>` : ""}<p class="fine">${(b || a)?.sold || 0} parts sold in ${b ? "round 2" : "round 1"}</p></article>`;
+      return `<article class="card result-card"><span class="eyebrow">${esc(s.name)}</span><h3>${money((b || a)?.profit)} <small>profit (INR)</small></h3>${a ? `<div class="stock-line"><span>Round 1 · blind</span><b>${money(a.profit)}</b></div>` : ""}${b ? `<div class="stock-line"><span>Round 2 · informed</span><b>${money(b.profit)}</b></div><div class="profit-change ${b.profit - a.profit >= 0 ? "positive" : "negative"}">${b.profit >= a.profit ? "+" : ""}${money(b.profit - a.profit)} change</div>` : ""}<p class="fine">${(b || a)?.sold || 0} parts sold in ${b ? "round 2" : "round 1"}</p></article>`;
     })
     .join("")}</div>${Object.entries(rs)
     .map(
@@ -446,99 +435,17 @@ async function task(fn) {
     render();
   }
 }
-async function tapReaction() {
-  if (busy || !state || state.phase !== "reaction") return;
-  if (!reaction) {
-    clearTimeout(reactTimer);
-    if (state.me.challenge) {
-      await task(() =>
-        client.act("TRIAL_END", {
-          nonce: state.me.challenge.nonce,
-          ms: 2000,
-          early: true,
-        }),
-      );
-      lastTrial = "Interrupted attempt recorded as 2,000 ms.";
-      render();
-      if (!error && state.me.trials.length < 5)
-        reactTimer = setTimeout(() => {
-          if (!reaction) tapReaction();
-        }, 650);
-      return;
-    }
-    busy = true;
-    try {
-      await client.act("TRIAL_START");
-      const ch = state.me.challenge;
-      reaction = { phase: "waiting", nonce: ch.nonce };
-      busy = false;
-      render();
-      reactTimer = setTimeout(
-        () =>
-          requestAnimationFrame(() => {
-            if (!reaction) return;
-            const pad = document.querySelector("#reaction-pad");
-            reaction.phase = "green";
-            pad.classList.remove("waiting");
-            pad.classList.add("green");
-            pad.querySelector(".signal").textContent = "●";
-            pad.querySelector("strong").textContent = "TAP NOW";
-            reaction.start = performance.now();
-          }),
-        ch.delay,
-      );
-    } catch (e) {
-      busy = false;
-      error = e.message;
-      render();
-    }
-    return;
-  }
-  const early = reaction.phase !== "green",
-    ms = early
-      ? 2000
-      : Math.min(2000, Math.round(performance.now() - reaction.start)),
-    nonce = reaction.nonce;
-  clearTimeout(reactTimer);
-  reaction = null;
-  lastTrial = early
-    ? "Too early. This attempt counts as 2,000 ms."
-    : `${ms} ms · ${state.me.trials.length === 4 ? "Income calculated." : "Next green light…"}`;
-  await task(() => client.act("TRIAL_END", { nonce, ms, early }));
-  if (
-    !error &&
-    state.phase === "reaction" &&
-    state.me.trials.length < 5 &&
-    !document.hidden
-  )
-    reactTimer = setTimeout(() => {
-      if (!reaction) tapReaction();
-    }, 650);
-}
-root.addEventListener("pointerdown", (e) => {
-  if (e.target.closest("#reaction-pad")) {
-    e.preventDefault();
-    tapReaction();
-  }
-});
-root.addEventListener("keydown", (e) => {
-  if (
-    e.target.closest("#reaction-pad") &&
-    (e.key === " " || e.key === "Enter")
-  ) {
-    e.preventDefault();
-    if (!e.repeat) tapReaction();
-  }
-});
 root.addEventListener("input", (e) => {
   if (e.target.dataset.field) {
     draftShop[e.target.dataset.part][e.target.dataset.field] = Number(
-      e.target.value,
+      e.target.dataset.field === "price"
+        ? Number(e.target.value) / 100
+        : e.target.value,
     );
     const margin = document.querySelector("#unit-margin");
     if (margin)
       margin.textContent = money(
-        Number(e.target.value) - BY_ID[e.target.dataset.part].cost,
+        Number(e.target.value) / 100 - BY_ID[e.target.dataset.part].cost,
       );
   }
   if (e.target.dataset.wish) wish[e.target.dataset.wish] = e.target.value;
@@ -573,6 +480,11 @@ root.addEventListener("click", async (e) => {
         error = "Copy this link: " + b.dataset.copy;
         render();
       });
+    return;
+  }
+  if (b.dataset.budget) {
+    budgetPick = b.dataset.budget;
+    render();
     return;
   }
   if (b.dataset.step !== undefined) {
@@ -611,6 +523,10 @@ root.addEventListener("click", async (e) => {
   }
   const a = b.dataset.action;
   if (!a) return;
+  if (a === "save-budget") {
+    task(() => client.act("SELECT_BUDGET", { choice: budgetPick }));
+    return;
+  }
   if (a === "builder-next" || a === "builder-back") {
     builderStep = Math.max(
       0,
@@ -654,7 +570,7 @@ root.addEventListener("click", async (e) => {
   if (
     a === "force-next" &&
     (await ask(
-      "Move to the next phase even if some people have not finished? Unfinished reaction players receive 600 coins; unsaved shops remain empty.",
+      "Move to the next phase even if some people have not finished? Unanswered budgets are excluded from survey totals; unsaved shops remain empty.",
     ))
   )
     task(() => client.act("NEXT", { force: true }));
@@ -665,13 +581,13 @@ root.addEventListener("click", async (e) => {
     (await ask(
       "Buy this complete PC for " +
         money(cartTotal()) +
-        " coins? Purchases are final for this round.",
+        " INR? Purchases are final for this round.",
     ))
   )
     task(() => client.act("BUY", { lines: Object.values(cart) }));
   if (
     a === "pass" &&
-    (await ask("Keep your coins and make no purchase this round?"))
+    (await ask("Keep your INR and make no purchase this round?"))
   )
     task(() => client.act("PASS"));
   if (a === "end" && (await ask("End this session now?")))
@@ -679,7 +595,7 @@ root.addEventListener("click", async (e) => {
   if (
     a === "again" &&
     (await ask(
-      "Reset both markets and reaction scores for everyone in this room?",
+      "Reset both markets and budget answers for everyone in this room?",
     ))
   )
     task(async () => {

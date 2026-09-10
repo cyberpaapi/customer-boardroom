@@ -1,4 +1,5 @@
 import {
+  BUDGET_OPTIONS,
   BASIC_SELLER,
   referencePrice,
   offerEnabled,
@@ -23,7 +24,7 @@ const esc = (s) =>
         c
       ],
   );
-const money = (n) => Number(n || 0).toLocaleString("en-IN");
+const money = (n) => "₹" + (Number(n || 0) * 100).toLocaleString("en-IN");
 export const partImage = (id, cls = "") =>
   `<img class="${cls}" src="${import.meta.env.BASE_URL}parts/${id}.webp" alt="${esc(BY_ID[id]?.name || "PC component")}" width="360" height="360">`;
 export function cheapestOffer(state, part) {
@@ -102,13 +103,13 @@ export function builderScreen({
         ? PARTS.filter((p) => draftShop[p.id]?.enabled)
             .map(
               (p) =>
-                `<div>${partImage(p.id)}<span><b>${p.name}</b><small>${money(draftShop[p.id].price)} coins each</small></span></div>`,
+                `<div>${partImage(p.id)}<span><b>${p.name}</b><small>${money(draftShop[p.id].price)} each</small></span></div>`,
             )
             .join("") ||
           "<p>Your shop is empty. Go back and choose components.</p>"
         : CATEGORIES.map(
             (cat) =>
-              `<button data-step="${CATEGORIES.indexOf(cat)}" class="review-part">${partImage(build[cat])}<span><small>${LABELS[cat]}</small><b>${BY_ID[build[cat]].name}</b><small>🪙 ${money(prefs ? referencePrice(BY_ID[build[cat]]) : state.offers[cart[cat]?.seller]?.[cart[cat]?.part]?.price || 0)} coins</small></span><span>Change ↗</span></button>`,
+              `<button data-step="${CATEGORIES.indexOf(cat)}" class="review-part">${partImage(build[cat])}<span><small>${LABELS[cat]}</small><b>${BY_ID[build[cat]].name}</b><small>${money(prefs ? referencePrice(BY_ID[build[cat]]) : state.offers[cart[cat]?.seller]?.[cart[cat]?.part]?.price || 0)}</small></span><span>Change ↗</span></button>`,
           ).join("")
     }</div>${prefs ? `<label class="purpose-label">What will you use it for?<select id="use">${["Everyday work", "Gaming", "Creative work", "Coding"].map((x) => `<option ${x === use ? "selected" : ""}>${x}</option>`).join("")}</select></label>` : ""}`;
   } else
@@ -128,13 +129,13 @@ export function builderScreen({
           ? referencePrice(BY_ID[wish[c]])
           : state.offers[cart[c]?.seller]?.[cart[c]?.part]?.price || 0;
         const tooExpensive = !seller && total - oldPrice + price > budget;
-        return `<button class="component-option choice-${i} ${selected ? "selected" : ""}" data-component="${p.id}" data-mode="${mode}" ${missing || tooExpensive || busy || (seller && p.tier === 1) ? "disabled" : ""} aria-pressed="${selected}">${partImage(p.id)}<span><b>${p.name}</b><small>${seller ? (p.tier === 1 ? "0 coins · included free for everyone" : "Unit cost " + money(p.cost) + " coins") : prefs ? "🪙 " + money(price) + " coins · " + (p.tier === 1 ? "Basic · slow spec" : p.detail) : offer ? "🪙 " + money(offer.price) + " coins · " + esc(offer.name) : "Not offered by any seller"}</small></span><span class="choice-check">${selected ? "✓" : ["A", "B", "C"][i]}</span></button>`;
+        return `<button class="component-option choice-${i} ${selected ? "selected" : ""}" data-component="${p.id}" data-mode="${mode}" ${missing || tooExpensive || busy || (seller && p.tier === 1) ? "disabled" : ""} aria-pressed="${selected}">${partImage(p.id)}<span><b>${p.name}</b><small>${seller ? (p.tier === 1 ? "₹0 · included free for everyone" : "Unit cost " + money(p.cost) + "") : prefs ? "" + money(price) + " · " + (p.tier === 1 ? "Basic · slow spec" : p.detail) : offer ? "" + money(offer.price) + " · " + esc(offer.name) : "Not offered by any seller"}</small></span><span class="choice-check">${selected ? "✓" : ["A", "B", "C"][i]}</span></button>`;
       })
       .join("")}</div>`;
   if (seller && !review) {
     const picked = BY_ID[build[c]],
       d = draftShop[picked.id];
-    choices += `<div class="stock-editor"><div><b>${picked.name}</b><small>Unlimited supply. Profit per sale: <b id="unit-margin">${money(d.price - picked.cost)}</b> coins.</small></div><label>Selling price<input type="number" inputmode="numeric" min="${picked.cost}" max="10000" data-part="${picked.id}" data-field="price" aria-label="${picked.name} selling price" value="${d.price}"></label></div>`;
+    choices += `<div class="stock-editor"><div><b>${picked.name}</b><small>Unlimited supply. Profit per sale: <b id="unit-margin">${money(d.price - picked.cost)}</b>.</small></div><label>Selling price<input type="number" inputmode="numeric" min="${picked.cost * 100}" max="1000000" step="100" data-part="${picked.id}" data-field="price" aria-label="${picked.name} selling price" value="${d.price * 100}"></label></div>`;
   }
   const amount = seller ? investment : budget - total;
   const action = review
@@ -162,7 +163,7 @@ export function builderScreen({
       !seller &&
       !prefs &&
       (Object.keys(cart).length !== 5 || total > budget));
-  return `<section class="build-experience"><div class="build-topline"><span>${badge}</span><span>${seller ? "Unlimited supply" : "🪙 <b>" + money(budget - total) + "</b> coins left"}</span></div>${prefs ? `<div class="coin-income">🪙 <strong>${money(budget)} coins earned</strong><small>Choose your PC. Upgrade costs come out of your coins.</small></div>` : ""}<nav class="build-progress" aria-label="PC build steps">${CATEGORIES.map((cat, i) => `<button data-step="${i}" class="${i === step ? "current" : ""} ${i < step ? "visited" : ""}" aria-label="Step ${i + 1}: ${LABELS[cat]}"><span>${i + 1}</span><small>${["CPU", "Graphics", "RAM", "Storage", "Case"][i]}</small></button>`).join("")}<button data-step="5" class="${review ? "current" : ""}" aria-label="Review build"><span>✓</span><small>Review</small></button></nav><h1 class="build-question">${question}</h1>${previewMarkup(build, review ? "review" : c)}<div class="choice-area">${choices}</div><div class="build-bottom"><button class="button ghost" data-action="builder-back" ${step === 0 ? "disabled" : ""}>← Back</button><div><small>${seller ? "Components offered" : "Coins remaining"}</small><strong id="investment">${money(amount)}${seller ? "" : " coins"}</strong></div><button class="button primary" data-action="${action}" ${disabled ? "disabled" : ""}>${buttonText}</button></div>${!seller && !prefs ? '<p class="builder-footnote">Choices deduct coins immediately; changing a part refunds its previous cost. Basic parts are always free. <button data-action="pass">Pass this market</button></p>' : seller ? `<p class="builder-footnote">${state.me.ready ? "Shop saved ✓ · changes need to be saved again." : "Profit = selling price − component cost, on each actual sale."}</p>` : state.me.preferenceSaved ? '<p class="builder-footnote success">Preferences saved ✓ · waiting for the presenter.</p>' : ""}</section>`;
+  return `<section class="build-experience"><div class="build-topline"><span>${badge}</span><span>${seller ? "Unlimited supply" : "<b>" + money(budget - total) + "</b> remaining"}</span></div>${prefs ? `<div class="coin-income"><strong>${BUDGET_OPTIONS.find((o) => o.id === state.me.budgetChoice)?.label || money(budget)}</strong><small>For this exercise, your build allowance is ${money(budget)}. Upgrade costs reduce it.</small></div>` : ""}<nav class="build-progress" aria-label="PC build steps">${CATEGORIES.map((cat, i) => `<button data-step="${i}" class="${i === step ? "current" : ""} ${i < step ? "visited" : ""}" aria-label="Step ${i + 1}: ${LABELS[cat]}"><span>${i + 1}</span><small>${["CPU", "Graphics", "RAM", "Storage", "Case"][i]}</small></button>`).join("")}<button data-step="5" class="${review ? "current" : ""}" aria-label="Review build"><span>✓</span><small>Review</small></button></nav><h1 class="build-question">${question}</h1>${previewMarkup(build, review ? "review" : c)}<div class="choice-area">${choices}</div><div class="build-bottom"><button class="button ghost" data-action="builder-back" ${step === 0 ? "disabled" : ""}>← Back</button><div><small>${seller ? "Components offered" : "Budget remaining"}</small><strong id="investment">${seller ? amount : money(amount)}</strong></div><button class="button primary" data-action="${action}" ${disabled ? "disabled" : ""}>${buttonText}</button></div>${!seller && !prefs ? '<p class="builder-footnote">Choices deduct immediately; changing a part refunds its previous cost. Basic parts are always free. <button data-action="pass">Pass this market</button></p>' : seller ? `<p class="builder-footnote">${state.me.ready ? "Shop saved ✓ · changes need to be saved again." : "Profit = selling price − component cost, on each actual sale."}</p>` : state.me.preferenceSaved ? '<p class="builder-footnote success">Preferences saved ✓ · waiting for the presenter.</p>' : ""}</section>`;
 }
 export async function mountPreview() {
   const el = document.getElementById("rig-view");

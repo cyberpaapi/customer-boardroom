@@ -1,3 +1,7 @@
+## Current classroom flow
+The reaction game has been replaced by a private spending survey: Under ₹1,00,000; ₹1,00,000–₹1,50,000; ₹1,50,000–₹2,00,000; ₹2,00,000–₹2,50,000; ₹2,50,000+.
+For the subsequent purchase exercise these map to clearly disclosed allowances of ₹75,000, ₹1,25,000, ₹1,75,000, ₹2,25,000 and ₹3,00,000. Insights count the actual selected ranges; unanswered surveys are excluded. All visible monetary amounts are INR. Internally, one money unit equals ₹100. Basic parts remain free and supply unlimited. Two rounds and three private seller interfaces remain.
+
 # Customer in the Boardroom
 
 A live classroom experiment: reaction-earned income, PC shopping, and three sellers trying to understand their market.

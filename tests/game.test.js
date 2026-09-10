@@ -88,6 +88,7 @@ test("seller privacy before round 2 and anonymous insight afterwards", () => {
   const s = toPlan();
   s.players[1].trials = [111, 222, 333, 444, 555];
   s.players[1].budget = 1234;
+  s.players[1].budgetChoice = "100to150";
   const v = view(s, "s0");
   assert.equal(v.insights, undefined);
   assert.equal(v.roster, undefined);
@@ -97,7 +98,7 @@ test("seller privacy before round 2 and anonymous insight afterwards", () => {
   const x = view(s, "s0");
   assert.equal(x.insights.count, 2);
   assert.equal(
-    x.insights.bands.find((b) => b.label === "1,000–1,999").count,
+    x.insights.bands.find((b) => b.label === "₹1,00,000–₹1,50,000").count,
     1,
   );
   assert.ok(!JSON.stringify(x).includes("Customer 0"));
@@ -197,4 +198,24 @@ test("free basic build is always available with no seller offers and no profit",
     }),
   );
   assert.equal(s.players.find((p) => p.id === "c1").done, false);
+});
+
+test("budget survey records exact range, validates input and keeps answers private", () => {
+  const s = setup();
+  apply(s, "h", "NEXT");
+  assert.throws(() => apply(s, "c0", "SELECT_BUDGET", { choice: "invalid" }));
+  apply(s, "c0", "SELECT_BUDGET", { choice: "150to200" });
+  assert.equal(s.players[1].budget, 1750);
+  assert.equal(s.players[1].budgetChoice, "150to200");
+  apply(s, "h", "NEXT", { force: true });
+  addPlayer(s, { id: "s0", name: "Seller", role: "seller" });
+  assert.ok(!JSON.stringify(view(s, "s0")).includes("150to200"));
+  s.phase = "plan2";
+  s.round = 2;
+  const v = view(s, "s0");
+  assert.equal(v.insights.bands[2].count, 1);
+  assert.equal(
+    v.insights.bands.reduce((n, b) => n + b.count, 0),
+    1,
+  );
 });

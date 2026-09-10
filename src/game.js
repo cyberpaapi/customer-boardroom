@@ -1,3 +1,11 @@
+// Money is stored in units of 100 INR; all customer-facing amounts are rupees.
+export const BUDGET_OPTIONS = [
+  { id: "under100", label: "Under ₹1,00,000", amount: 750 },
+  { id: "100to150", label: "₹1,00,000–₹1,50,000", amount: 1250 },
+  { id: "150to200", label: "₹1,50,000–₹2,00,000", amount: 1750 },
+  { id: "200to250", label: "₹2,00,000–₹2,50,000", amount: 2250 },
+  { id: "250plus", label: "₹2,50,000+", amount: 3000 },
+];
 export const CATEGORIES = ["cpu", "gpu", "ram", "ssd", "case"];
 export const LABELS = {
   cpu: "Processor",
@@ -144,7 +152,7 @@ export const PHASES = [
 ];
 export const PHASE_LABELS = {
   lobby: "Everyone in",
-  reaction: "Earn your income",
+  reaction: "Choose your budget",
   plan1: "Round 1 · Set your shop",
   shop1: "Round 1 · Build your PC",
   result1: "Round 1 · The results",
@@ -244,10 +252,11 @@ export function insights(s) {
   const cs = customers(s);
   return {
     count: cs.length,
-    bands: ["600–999", "1,000–1,999", "2,000–3,999", "4,000+"].map((label) => ({
-      label,
-      count: cs.filter((p) => budgetBand(p.budget) === label).length,
+    bands: BUDGET_OPTIONS.map((option) => ({
+      label: option.label,
+      count: cs.filter((p) => p.budgetChoice === option.id).length,
     })),
+    budgetResponses: cs.filter((p) => p.budgetChoice).length,
     uses: ["Everyday work", "Gaming", "Creative work", "Coding"].map(
       (label) => ({ label, count: cs.filter((p) => p.use === label).length }),
     ),
@@ -297,11 +306,11 @@ export function apply(s, actorId, type, payload = {}, now = Date.now()) {
       assert(customers(s).length > 0, "At least one customer must join.");
     if (s.phase === "reaction") {
       const unfinished = customers(s).filter(
-        (p) => p.trials.length < 5 || !p.preferenceSaved,
+        (p) => !p.budgetChoice || !p.preferenceSaved,
       );
       assert(
         unfinished.length === 0 || payload.force === true,
-        "Some customers are still earning income or choosing preferences.",
+        "Some customers are still choosing budgets or preferences.",
       );
       customers(s).forEach((p) => {
         if (!p.budget) p.budget = 600;
@@ -340,11 +349,23 @@ export function apply(s, actorId, type, payload = {}, now = Date.now()) {
     s.players.forEach((p) => {
       p.trials = [];
       p.budget = 0;
+      delete p.budgetChoice;
       p.preferenceSaved = false;
       p.done = false;
       p.ready = false;
       delete p.challenge;
     });
+  } else if (type === "SELECT_BUDGET") {
+    assert(
+      p.role === "customer" && s.phase === "reaction",
+      "Budget selection is closed.",
+    );
+    const option = BUDGET_OPTIONS.find((x) => x.id === payload.choice);
+    assert(option, "Choose one of the five spending ranges.");
+    p.budgetChoice = option.id;
+    p.budget = option.amount;
+    p.wishlist = blankBuild();
+    p.preferenceSaved = false;
   } else if (type === "TRIAL_START") {
     assert(
       p.role === "customer" && s.phase === "reaction",
@@ -445,7 +466,10 @@ export function apply(s, actorId, type, payload = {}, now = Date.now()) {
         o = s.offers[l.seller]?.[l.part];
       assert(part && !seen.has(part.category), "Choose one part per category.");
       seen.add(part.category);
-      if(l.seller === BASIC_SELLER) { assert(part.tier === 1, "Only basic components are free."); return {seller:BASIC_SELLER,part:l.part,price:0,cost:0}; }
+      if (l.seller === BASIC_SELLER) {
+        assert(part.tier === 1, "Only basic components are free.");
+        return { seller: BASIC_SELLER, part: l.part, price: 0, cost: 0 };
+      }
       assert(
         offerEnabled(o),
         "This component is not offered. Update your build.",
@@ -497,7 +521,7 @@ export function view(s, id) {
     counts: {
       customers: customers(s).length,
       sellers: sellers(s).length,
-      earned: customers(s).filter((x) => x.trials.length === 5).length,
+      earned: customers(s).filter((x) => x.budgetChoice).length,
       preferences: customers(s).filter((x) => x.preferenceSaved).length,
       finished: customers(s).filter((x) => x.done).length,
       shopsReady: sellers(s).filter((x) => x.ready).length,
@@ -527,7 +551,7 @@ export function view(s, id) {
       id: x.id,
       name: x.name,
       role: x.role,
-      earned: x.trials?.length === 5,
+      earned: !!x.budgetChoice,
       preferences: x.preferenceSaved,
       done: x.done,
       ready: x.ready,
