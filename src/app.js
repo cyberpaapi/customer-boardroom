@@ -1,4 +1,13 @@
 import "./styles.css";
+import "./builder.css";
+import {
+  builderScreen,
+  mountPreview,
+  partImage,
+  cheapestOffer,
+} from "./builder.js";
+let builderStep = 0,
+  previewBuild = blankBuild();
 import QRCode from "qrcode";
 import { RoomClient } from "./network.js";
 import {
@@ -49,6 +58,8 @@ const client = new RoomClient(
     state = s;
     if (was?.phase !== s.phase) {
       cart = {};
+      builderStep = 0;
+      previewBuild = blankBuild();
       lastTrial = "";
       if (reaction) {
         clearTimeout(reactTimer);
@@ -82,6 +93,11 @@ function shell(html) {
     header() +
     `<main>${error ? `<div class="error" role="alert">${esc(error)} ${btn("Dismiss", "dismiss", "small ghost")}</div>` : ""}${html}</main><footer>Customer in the Boardroom · Group 11 <span>Fictional components. Real decisions.</span></footer>`;
   renderQRs();
+  document.body.classList.toggle(
+    "building",
+    !!document.querySelector(".build-experience"),
+  );
+  mountPreview();
 }
 function home() {
   const saved = localStorage.getItem("boardroom:last");
@@ -207,7 +223,7 @@ function customer() {
   );
 }
 function buildList(build) {
-  return `<div class="build-list">${CATEGORIES.map((c) => `<div><span class="part-symbol ${c}">${icon(c)}</span><span><small>${LABELS[c]}</small><strong>${esc(BY_ID[build[c]]?.name || "Not selected")}</strong></span></div>`).join("")}</div>`;
+  return `<div class="build-list">${CATEGORIES.map((c) => `<div>${partImage(build[c], "summary-part-image")}<span><small>${LABELS[c]}</small><strong>${esc(BY_ID[build[c]]?.name || "Not selected")}</strong></span></div>`).join("")}</div>`;
 }
 function reactionScreen() {
   const p = state.me;
@@ -215,28 +231,10 @@ function reactionScreen() {
     if (prefKey !== p.id) {
       prefKey = p.id;
       wish = { ...p.wishlist };
+      previewBuild = { ...wish };
       use = p.use;
     }
-    return (
-      title(
-        "YOUR INCOME",
-        `${money(p.budget)} coins earned.`,
-        `Your median reaction: ${median(p.trials)} ms. This budget stays the same for both markets.`,
-      ) +
-      `<section class="card"><h2>What would you like your PC to do?</h2><p>This is your private wishlist, not a purchase. Pick what you value. The actual market may offer different prices and stock.</p><form id="preferences"><label>Main use<select name="use" id="use">${["Everyday work", "Gaming", "Creative work", "Coding"].map((n) => `<option ${n === use ? "selected" : ""}>${n}</option>`).join("")}</select></label><div class="preference-grid">${CATEGORIES.map(
-        (c) =>
-          `<label>${LABELS[c]}<select data-wish="${c}">${PARTS.filter(
-            (p) => p.category === c,
-          )
-            .map(
-              (p) =>
-                `<option value="${p.id}" ${wish[c] === p.id ? "selected" : ""}>${p.name}</option>`,
-            )
-            .join("")}</select></label>`,
-      ).join(
-        "",
-      )}</div><button class="button primary" ${busy ? "disabled" : ""}>${p.preferenceSaved ? "Update my preferences" : "Save my preferences"}</button></form>${p.preferenceSaved ? '<p class="success">Saved. Wait here for the market to open.</p>' : ""}</section>`
-    );
+    return buildScreen("preferences");
   }
   return (
     title(
@@ -322,28 +320,23 @@ function seller() {
     );
   }
   return (
-    title(
-      `SELLER · ${esc(p.name)} · ROUND ${state.round}`,
-      state.round === 1 ? "What will they want?" : "Now, make an informed bet.",
-      `Stock a shop for ${state.counts.customers} customers. Your working capital is ${money(state.capital)} coins.`,
-    ) +
     (state.round === 2
-      ? insightPanel()
-      : `<p class="note">Your first market is a blind decision. You have no customer income or preference data.</p>`) +
-    `<section class="card"><div class="section-heading"><h2>Your component shop</h2><p>Choose quantities and prices. All five component categories are compatible. Cases include the motherboard, power supply and cooling.</p></div><div class="shop-columns"><span>Component · wholesale cost</span><span>Price</span><span>Stock</span></div>${CATEGORIES.map(
-      (c) =>
-        `<h3 class="category-heading">${LABELS[c]}</h3>${PARTS.filter(
-          (x) => x.category === c,
-        )
-          .map(
-            (x) =>
-              `<div class="shop-row"><div><strong>${x.name}</strong><small>${money(x.cost)} coins each</small></div><label><span class="sr-only">${x.name} selling price</span><input inputmode="numeric" type="number" min="${x.cost}" max="10000" data-part="${x.id}" data-field="price" value="${draftShop[x.id].price}"></label><label><span class="sr-only">${x.name} stock quantity</span><input inputmode="numeric" type="number" min="0" max="${state.counts.customers}" data-part="${x.id}" data-field="stock" value="${draftShop[x.id].stock}"></label></div>`,
-          )
-          .join("")}`,
-    ).join(
-      "",
-    )}<p class="fine">Keep prices at or above wholesale cost. You can stock up to one unit per customer of any component. There is no customer-count cap.</p></section><div class="sticky-action"><div><small>Inventory investment</small><strong id="investment">${money(investment())} / ${money(state.capital)}</strong></div>${btn(p.ready ? "Update my shop" : "Save & ready my shop", "save-shop", "primary")}${p.ready ? '<span class="success">Shop saved ✓</span>' : ""}</div>`
+      ? `<details class="customer-insight-toggle"><summary>View anonymous customer insights ↗</summary>${insightPanel()}</details>`
+      : "") + buildScreen("seller")
   );
+}
+function buildScreen(mode) {
+  return builderScreen({
+    mode,
+    state,
+    step: builderStep,
+    preview: previewBuild,
+    wish,
+    use,
+    cart,
+    draftShop,
+    busy,
+  });
 }
 function investment() {
   return PARTS.reduce(
@@ -367,33 +360,7 @@ function market() {
         ],
       )}<p>${state.round === 1 ? "Your original budget will return for round two." : "Both markets are complete. The results are next."}</p></section>`
     );
-  const total = cartTotal();
-  return (
-    title(
-      `CUSTOMER · ROUND ${state.round}`,
-      "Build your next PC.",
-      `Your budget: ${money(p.budget)} coins. Choose one part in every category; mix shops however you like.`,
-    ) +
-    `<p class="note">Your preference: ${esc(p.use)}. Cases include the motherboard, power supply and cooling. Every combination works.</p><div class="market-grid">${CATEGORIES.map(
-      (c) =>
-        `<section class="component-section"><div class="section-heading"><span class="part-symbol ${c}">${icon(c)}</span><div><h2>${LABELS[c]}</h2><p>Wishlist: ${BY_ID[p.wishlist[c]].name}</p></div></div><div class="offers">${
-          state.sellers
-            .flatMap((seller) =>
-              Object.values(state.offers[seller.id] || {})
-                .filter((o) => BY_ID[o.part].category === c && o.stock > 0)
-                .map((o) => {
-                  const selected =
-                    cart[c]?.seller === seller.id && cart[c]?.part === o.part;
-                  return `<button class="offer ${selected ? "selected" : ""}" data-select="${c}" data-seller="${seller.id}" data-part="${o.part}" ${o.stock <= o.sold ? "disabled" : ""}><span class="offer-top"><span>${esc(seller.name)}</span>${selected ? "<b>✓ Selected</b>" : ""}</span><strong>${BY_ID[o.part].name}</strong><small>${BY_ID[o.part].detail}</small><span class="offer-bottom"><b>${money(o.price)} <small>coins</small></b><span>${o.stock - o.sold} left</span></span></button>`;
-                }),
-            )
-            .join("") ||
-          '<p class="empty">No seller stocked this category. You can wait, or pass this round.</p>'
-        }</div></section>`,
-    ).join(
-      "",
-    )}</div><div class="sticky-action"><div><small>${Object.keys(cart).length}/5 parts selected</small><strong>${money(total)} / ${money(p.budget)} coins</strong></div>${btn("Buy my PC", "buy", "primary", Object.keys(cart).length !== 5 || total > p.budget)}${btn("Pass this round", "pass", "ghost small")}</div>`
-  );
+  return buildScreen("customer");
 }
 function cartTotal() {
   return Object.values(cart).reduce(
@@ -581,6 +548,24 @@ root.addEventListener("click", async (e) => {
       });
     return;
   }
+  if (b.dataset.step !== undefined) {
+    builderStep = Number(b.dataset.step);
+    render();
+    window.scrollTo(0, 0);
+    return;
+  }
+  if (b.dataset.component) {
+    const id = b.dataset.component,
+      c = BY_ID[id].category;
+    previewBuild[c] = id;
+    if (b.dataset.mode === "preferences") wish[c] = id;
+    if (b.dataset.mode === "customer") {
+      const o = cheapestOffer(state, id);
+      if (o) cart[c] = { seller: o.seller, part: id };
+    }
+    render();
+    return;
+  }
   if (b.dataset.select) {
     cart[b.dataset.select] = { seller: b.dataset.seller, part: b.dataset.part };
     render();
@@ -588,6 +573,19 @@ root.addEventListener("click", async (e) => {
   }
   const a = b.dataset.action;
   if (!a) return;
+  if (a === "builder-next" || a === "builder-back") {
+    builderStep = Math.max(
+      0,
+      Math.min(5, builderStep + (a === "builder-next" ? 1 : -1)),
+    );
+    render();
+    window.scrollTo(0, 0);
+    return;
+  }
+  if (a === "save-preferences") {
+    task(() => client.act("PREFERENCES", { wishlist: wish, use }));
+    return;
+  }
   if (a === "join-tab" || a === "host-tab") {
     entry = a === "join-tab" ? "join" : "host";
     render();

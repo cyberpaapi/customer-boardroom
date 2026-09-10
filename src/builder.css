@@ -1,0 +1,508 @@
+body.building {
+  background:
+    radial-gradient(ellipse at 15% 10%, #efe9ff, transparent 50%),
+    radial-gradient(ellipse at 90% 90%, #e0f7f2, transparent 50%), #f8f7fc;
+}
+.building main {
+  max-width: 1000px;
+  padding-top: 8px;
+}
+.building footer {
+  display: none;
+}
+.building header {
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+.build-topline {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  font-weight: 750;
+  color: #665b87;
+  letter-spacing: 0.05em;
+}
+.build-progress {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: 14px auto 8px;
+}
+.build-progress button {
+  background: none;
+  border: 0;
+  min-width: 56px;
+  min-height: 48px;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  color: #8a839e;
+  cursor: pointer;
+}
+.build-progress span {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #e8e3f2;
+  font-weight: 800;
+}
+.build-progress small {
+  font-size: 11px;
+}
+.build-progress .current {
+  color: #633be3;
+}
+.build-progress .current span {
+  background: #633be3;
+  color: white;
+}
+.build-progress .visited span {
+  background: #d4f3e5;
+  color: #167357;
+}
+.build-question {
+  text-align: center;
+  font-size: clamp(25px, 3.8vw, 38px);
+  line-height: 1.12;
+  letter-spacing: -0.04em;
+  margin: 12px 0 16px;
+}
+.machine-stage {
+  height: 310px;
+  border-radius: 32px;
+  background: radial-gradient(
+    ellipse at 50% 40%,
+    #fff 0%,
+    #eee9ff 65%,
+    #dceeea
+  );
+  position: relative;
+  overflow: hidden;
+  margin: 0 auto 18px;
+  isolation: isolate;
+}
+#rig-view {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+#rig-view canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.machine-badge {
+  position: absolute;
+  top: 18px;
+  left: 22px;
+  z-index: 2;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  font-weight: 800;
+  color: #6d608c;
+}
+.machine-badge > span {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #39b994;
+  margin-right: 6px;
+}
+.component-focus {
+  position: absolute;
+  left: 20px;
+  bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  max-width: 210px;
+  background: #ffffffd9;
+  padding: 8px 12px 8px 8px;
+  border-radius: 18px;
+  box-shadow: 0 10px 25px #5343760b;
+}
+.component-focus img {
+  width: 54px;
+  height: 54px;
+  border-radius: 12px;
+  object-fit: contain;
+}
+.component-focus small {
+  display: block;
+  font-size: 8px;
+  color: #887da0;
+  margin-bottom: 4px;
+  letter-spacing: 0.06em;
+}
+.component-focus b {
+  font-size: 12px;
+}
+.machine-caption {
+  position: absolute;
+  right: 20px;
+  bottom: 18px;
+  font-size: 11px;
+  color: #7c7195;
+}
+.kahoot-choices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.component-option {
+  border: 0;
+  border-radius: 21px;
+  display: flex;
+  align-items: center;
+  text-align: left;
+  gap: 10px;
+  min-height: 105px;
+  padding: 12px;
+  color: #342753;
+  cursor: pointer;
+  position: relative;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+  background: #ede4ff;
+}
+.component-option.choice-1 {
+  background: #d9f3ec;
+  color: #214f49;
+}
+.component-option.choice-2 {
+  background: #ffead6;
+  color: #704a27;
+}
+.component-option:hover:not(:disabled) {
+  transform: translateY(-3px);
+}
+.component-option.selected {
+  box-shadow:
+    0 0 0 3px #7148e4,
+    0 8px 24px #6d46ce18;
+}
+.component-option img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  border-radius: 14px;
+  background: white;
+}
+.component-option b {
+  display: block;
+  font-size: 15px;
+  line-height: 1.15;
+}
+.component-option small {
+  display: block;
+  font-size: 11px;
+  line-height: 1.4;
+  margin-top: 5px;
+}
+.choice-check {
+  align-self: flex-start;
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 900;
+}
+.component-option:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.build-bottom {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 0 max(12px, env(safe-area-inset-bottom));
+  background: #f8f7fcf5;
+  backdrop-filter: blur(12px);
+  margin-top: 10px;
+}
+.build-bottom > div {
+  text-align: center;
+}
+.build-bottom small {
+  display: block;
+  font-size: 10px;
+  color: #8a809f;
+}
+.build-bottom strong {
+  display: block;
+  font-size: 16px;
+  margin-top: 3px;
+}
+.builder-footnote {
+  text-align: center;
+  font-size: 11px;
+  color: #817591;
+  margin: 8px 0 20px;
+}
+.builder-footnote button {
+  border: 0;
+  background: none;
+  color: #6e44d6;
+  text-decoration: underline;
+  min-height: 44px;
+  padding: 8px;
+  cursor: pointer;
+}
+.stock-editor {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr;
+  gap: 14px;
+  align-items: center;
+  margin-top: 18px;
+}
+.stock-editor small {
+  display: block;
+  font-size: 11px;
+  margin-top: 4px;
+  color: #857b95;
+}
+.stock-editor label {
+  font-size: 11px;
+}
+.stock-editor input {
+  margin-top: 4px;
+  padding: 10px;
+  min-height: 44px;
+}
+.build-review {
+  display: grid;
+  gap: 8px;
+}
+.build-review > div,
+.review-part {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 18px;
+  background: #fff;
+  text-align: left;
+  min-height: 65px;
+  color: #342753;
+}
+.build-review img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 10px;
+}
+.build-review small {
+  display: block;
+  font-size: 10px;
+  color: #83778f;
+}
+.build-review b {
+  font-size: 14px;
+}
+.review-part > span:last-child {
+  margin-left: auto;
+  font-size: 11px;
+  color: #7446cb;
+}
+.purpose-label {
+  margin-top: 15px;
+}
+.customer-insight-toggle {
+  background: #e5dcfb;
+  border-radius: 18px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+.customer-insight-toggle summary {
+  cursor: pointer;
+  font-weight: 750;
+  min-height: 28px;
+}
+.summary-part-image {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  border-radius: 10px;
+}
+.rig-fallback {
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+}
+.fallback-part {
+  position: absolute;
+  top: 30%;
+  left: 48%;
+}
+.fallback-part img {
+  width: 70px;
+  border-radius: 12px;
+}
+@media (max-width: 600px) {
+  .building main {
+    padding: 4px 16px 12px;
+  }
+  .building header {
+    padding: 10px 16px;
+  }
+  .building .brand-mark {
+    width: 32px;
+    height: 32px;
+    font-size: 25px;
+  }
+  .building .brand {
+    font-size: 13px;
+  }
+  .building .brand-sub {
+    font-size: 7px;
+  }
+  .building .connection {
+    font-size: 9px;
+  }
+  .build-topline {
+    font-size: 9px;
+    letter-spacing: 0;
+  }
+  .build-progress {
+    gap: 0;
+    margin: 9px 0 5px;
+    justify-content: space-between;
+  }
+  .build-progress button {
+    min-width: 44px;
+    padding: 0;
+  }
+  .build-progress small {
+    font-size: 9px;
+  }
+  .build-question {
+    margin: 6px 0 12px;
+    font-size: 26px;
+    min-height: 55px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .machine-stage {
+    height: 235px;
+    border-radius: 24px;
+    margin-bottom: 14px;
+    position: sticky;
+    top: 0;
+    z-index: 3;
+  }
+  .machine-badge {
+    top: 13px;
+    left: 14px;
+    font-size: 8px;
+  }
+  .component-focus {
+    left: 10px;
+    bottom: 10px;
+    padding: 5px;
+    gap: 5px;
+    max-width: 135px;
+    border-radius: 12px;
+  }
+  .component-focus img {
+    width: 34px;
+    height: 34px;
+  }
+  .component-focus b {
+    font-size: 9px;
+  }
+  .component-focus small {
+    font-size: 6px;
+  }
+  .machine-caption {
+    right: 10px;
+    bottom: 13px;
+    font-size: 8px;
+    max-width: 100px;
+    text-align: right;
+  }
+  .kahoot-choices {
+    grid-template-columns: 1fr;
+    gap: 9px;
+  }
+  .component-option {
+    min-height: 68px;
+    padding: 8px 12px;
+    border-radius: 16px;
+    gap: 12px;
+  }
+  .component-option img {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+  }
+  .component-option b {
+    font-size: 15px;
+  }
+  .component-option small {
+    font-size: 10px;
+    margin-top: 3px;
+  }
+  .choice-check {
+    align-self: center;
+    font-size: 15px;
+  }
+  .build-bottom {
+    gap: 7px;
+    padding-top: 12px;
+  }
+  .build-bottom .button {
+    padding: 12px;
+    font-size: 12px;
+    min-height: 46px;
+  }
+  .build-bottom strong {
+    font-size: 13px;
+  }
+  .build-bottom small {
+    font-size: 9px;
+  }
+  .stock-editor {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .stock-editor > div {
+    grid-column: 1/-1;
+  }
+  .stock-editor > div b {
+    font-size: 13px;
+  }
+  .stock-editor label {
+    margin: 0;
+  }
+  .build-review > div,
+  .review-part {
+    padding: 7px 10px;
+  }
+  .review-part > span:last-child {
+    font-size: 10px;
+  }
+  .builder-footnote {
+    font-size: 10px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .component-option {
+    transition: none;
+  }
+}
+
+.machine-stage {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
