@@ -55,14 +55,14 @@ node tests/live.mjs
 
 ## Component/effect matrix
 
-| Component / action | Effect | UI | Verification |
-| --- | --- | --- | --- |
+| Component / action             | Effect                                               | UI                                 | Verification                      |
+| ------------------------------ | ---------------------------------------------------- | ---------------------------------- | --------------------------------- |
 | CPU/GPU/RAM/SSD/case × 3 tiers | Fixed wholesale cost, price and stock; one per build | Seller inventory + customer market | data completeness, purchase tests |
-| TRIAL_START / TRIAL_END | Five attempts; median → income | Green reaction pad | timing and scoring tests |
-| PREFERENCES | Private use + wishlist | Customer selectors | role/phase validation |
-| SAVE_SHOP | Capital-limited inventory | Seller editor | capital/stock tests |
-| BUY / PASS | Atomic purchase or decline | PC builder | race, duplicate, overspend tests |
-| NEXT | Presenter-only phase change | Presenter controls | full two-market test |
-| FORCE_END / PLAY_AGAIN | End safely or reset | Presenter controls | recovery tests |
+| TRIAL_START / TRIAL_END        | Five attempts; median → income                       | Green reaction pad                 | timing and scoring tests          |
+| PREFERENCES                    | Private use + wishlist                               | Customer selectors                 | role/phase validation             |
+| SAVE_SHOP                      | Capital-limited inventory                            | Seller editor                      | capital/stock tests               |
+| BUY / PASS                     | Atomic purchase or decline                           | PC builder                         | race, duplicate, overspend tests  |
+| NEXT                           | Presenter-only phase change                          | Presenter controls                 | full two-market test              |
+| FORCE_END / PLAY_AGAIN         | End safely or reset                                  | Presenter controls                 | recovery tests                    |
 
 Original hero artwork was generated for this project. Component specifications and coin prices are fictional classroom abstractions; no commercial campaign images or logos are used.

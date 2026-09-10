@@ -1,1 +1,16 @@
-{"version":2,"framework":null,"buildCommand":"npm run build","outputDirectory":"dist","regions":["sin1"],"functions":{"api/game.js":{"maxDuration":300}},"rewrites":[{"source":"/rooms/:path*","destination":"/api/game?route=/rooms/:path*"},{"source":"/rooms","destination":"/api/game?route=/rooms"},{"source":"/health","destination":"/api/game?route=/health"}]}
+{
+  "version": 2,
+  "framework": null,
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "regions": ["sin1"],
+  "functions": { "api/game.js": { "maxDuration": 300 } },
+  "rewrites": [
+    {
+      "source": "/rooms/:path*",
+      "destination": "/api/game?route=/rooms/:path*"
+    },
+    { "source": "/rooms", "destination": "/api/game?route=/rooms" },
+    { "source": "/health", "destination": "/api/game?route=/health" }
+  ]
+}

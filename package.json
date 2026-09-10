@@ -1,1 +1,23 @@
-{"name":"customer-boardroom","version":"1.0.0","private":true,"type":"module","scripts":{"dev":"vite --host 127.0.0.1","dev:server":"node server/local.js","build":"vite build","test":"node --test tests/*.test.js","check":"node --check src/app.js && node --check server/service.js && node --check server/store.js"},"dependencies":{"@neondatabase/serverless":"^1.1.0","qrcode":"^1.5.4","ws":"^8.21.3"},"devDependencies":{"@playwright/test":"^1.55.0","sharp":"0.35.4","vite":"^7.1.0"}}
+{
+  "name": "customer-boardroom",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "dev:server": "node server/local.js",
+    "build": "vite build",
+    "test": "node --test tests/*.test.js",
+    "check": "node --check src/app.js && node --check server/service.js && node --check server/store.js"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "qrcode": "^1.5.4",
+    "ws": "^8.21.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "sharp": "0.35.4",
+    "vite": "^7.1.0"
+  }
+}
