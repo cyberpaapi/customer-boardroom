@@ -445,6 +445,7 @@ export function apply(s, actorId, type, payload = {}, now = Date.now()) {
         o = s.offers[l.seller]?.[l.part];
       assert(part && !seen.has(part.category), "Choose one part per category.");
       seen.add(part.category);
+      if(l.seller === BASIC_SELLER) { assert(part.tier === 1, "Only basic components are free."); return {seller:BASIC_SELLER,part:l.part,price:0,cost:0}; }
       assert(
         offerEnabled(o),
         "This component is not offered. Update your build.",
