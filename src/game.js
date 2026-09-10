@@ -128,6 +128,9 @@ export const PARTS = [
     tier: 3,
   },
 ];
+export const BASIC_SELLER = "__basic__";
+export const referencePrice = (part) =>
+  part.tier === 1 ? 0 : Math.round(part.cost * 1.5);
 export const BY_ID = Object.fromEntries(PARTS.map((p) => [p.id, p]));
 export const PHASES = [
   "lobby",
@@ -455,7 +458,8 @@ export function apply(s, actorId, type, payload = {}, now = Date.now()) {
       };
     });
     assert(total <= p.budget, "Your build costs more than your budget.");
-    for (const l of lines) s.offers[l.seller][l.part].sold++;
+    for (const l of lines)
+      if (l.seller !== BASIC_SELLER) s.offers[l.seller][l.part].sold++;
     s.orders.push({ buyer: p.id, round: s.round, lines, total });
     p.done = true;
   } else if (type === "PASS") {

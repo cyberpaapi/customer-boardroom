@@ -11,6 +11,7 @@ let builderStep = 0,
 import QRCode from "qrcode";
 import { RoomClient } from "./network.js";
 import {
+  referencePrice,
   offerEnabled,
   PARTS,
   BY_ID,
@@ -232,6 +233,13 @@ function reactionScreen() {
     if (prefKey !== p.id) {
       prefKey = p.id;
       wish = { ...p.wishlist };
+      if (
+        Object.values(wish).reduce(
+          (n, id) => n + referencePrice(BY_ID[id]),
+          0,
+        ) > p.budget
+      )
+        wish = blankBuild();
       previewBuild = { ...wish };
       use = p.use;
     }
@@ -241,9 +249,9 @@ function reactionScreen() {
     title(
       `REACTION ${p.trials.length + 1} OF 5`,
       "Wait. Green. Tap.",
-      "Five attempts. Your middle time sets your income.",
+      "Five taps. One challenge. Earn your coins.",
     ) +
-    `<section class="reaction-card"><button id="reaction-pad" class="reaction-pad ${reaction?.phase || "idle"}" ${busy ? "disabled" : ""}><span class="signal">${reaction?.phase === "green" ? "●" : "○"}</span><strong>${reaction?.phase === "green" ? "TAP NOW" : reaction?.phase === "waiting" ? "Wait for green…" : p.challenge ? "Interrupted attempt" : "Ready when you are."}</strong><span>${reaction ? "Tap only after the color changes." : p.challenge ? "Tap to record this interrupted attempt and continue." : "Tap here to begin."}</span></button><p id="last-trial" aria-live="polite">${esc(lastTrial)}</p><div class="trial-dots">${Array.from({ length: 5 }, (_, i) => `<span class="${i < p.trials.length ? "complete" : ""}">${i < p.trials.length ? p.trials[i] + " ms" : i + 1}</span>`).join("")}</div></section><section class="reaction-info"><p><b>Too early?</b> That attempt counts as 2,000 ms. There are no restarts.</p><p><b>The reward curve:</b> 300 ms → ${money(coins(300))} coins · 200 ms → ${money(coins(200))} · 150 ms → ${money(coins(150))}.</p><p class="fine">Play on your own device. Timing uses your screen, not network round-trip speed. Device latency can affect results; this is a classroom simulation, not a scientific reflex test.</p></section>`
+    `<section class="reaction-card"><button id="reaction-pad" class="reaction-pad ${reaction?.phase || "idle"}" ${busy ? "disabled" : ""}><span class="signal">${reaction?.phase === "green" ? "●" : "○"}</span><strong>${reaction?.phase === "green" ? "TAP NOW" : reaction?.phase === "waiting" ? "Wait for green…" : p.challenge ? "Interrupted attempt" : p.trials.length ? "Next green light…" : "Ready when you are."}</strong><span>${reaction ? "Tap only after the color changes." : p.challenge ? "Tap to record this interrupted attempt and continue." : p.trials.length ? "The next attempt starts automatically." : "Tap here to begin."}</span></button><p id="last-trial" aria-live="polite">${esc(lastTrial)}</p><div class="trial-dots">${Array.from({ length: 5 }, (_, i) => `<span class="${i < p.trials.length ? "complete" : ""}">${i < p.trials.length ? p.trials[i] + " ms" : i + 1}</span>`).join("")}</div></section><section class="reaction-info"><p><b>Too early?</b> That attempt counts as 2,000 ms. There are no restarts.</p><p><b>The reward curve:</b> 300 ms → ${money(coins(300))} coins · 200 ms → ${money(coins(200))} · 150 ms → ${money(coins(150))}.</p><p class="fine">Play on your own device. Timing uses your screen, not network round-trip speed. Device latency can affect results; this is a classroom simulation, not a scientific reflex test.</p></section>`
   );
 }
 function insightPanel() {
@@ -317,7 +325,7 @@ function seller() {
           price: state.offers[p.id]?.[x.id]?.price || Math.round(x.cost * 1.5),
           enabled: state.offers[p.id]?.[x.id]
             ? offerEnabled(state.offers[p.id][x.id])
-            : x.tier === 1,
+            : x.tier === 2,
         },
       ]),
     );
@@ -441,6 +449,7 @@ async function task(fn) {
 async function tapReaction() {
   if (busy || !state || state.phase !== "reaction") return;
   if (!reaction) {
+    clearTimeout(reactTimer);
     if (state.me.challenge) {
       await task(() =>
         client.act("TRIAL_END", {
@@ -451,6 +460,10 @@ async function tapReaction() {
       );
       lastTrial = "Interrupted attempt recorded as 2,000 ms.";
       render();
+      if (!error && state.me.trials.length < 5)
+        reactTimer = setTimeout(() => {
+          if (!reaction) tapReaction();
+        }, 650);
       return;
     }
     busy = true;
@@ -490,8 +503,17 @@ async function tapReaction() {
   reaction = null;
   lastTrial = early
     ? "Too early. This attempt counts as 2,000 ms."
-    : `${ms} ms · ${state.me.trials.length === 4 ? "Income calculated." : "Ready for the next attempt."}`;
+    : `${ms} ms · ${state.me.trials.length === 4 ? "Income calculated." : "Next green light…"}`;
   await task(() => client.act("TRIAL_END", { nonce, ms, early }));
+  if (
+    !error &&
+    state.phase === "reaction" &&
+    state.me.trials.length < 5 &&
+    !document.hidden
+  )
+    reactTimer = setTimeout(() => {
+      if (!reaction) tapReaction();
+    }, 650);
 }
 root.addEventListener("pointerdown", (e) => {
   if (e.target.closest("#reaction-pad")) {
@@ -566,7 +588,15 @@ root.addEventListener("click", async (e) => {
     if (b.dataset.mode === "seller")
       for (const p of PARTS.filter((p) => p.category === c))
         draftShop[p.id].enabled = p.id === id;
-    if (b.dataset.mode === "preferences") wish[c] = id;
+    if (b.dataset.mode === "preferences") {
+      const amount =
+        Object.entries(wish).reduce(
+          (n, [cat, p]) => n + (cat === c ? 0 : referencePrice(BY_ID[p])),
+          0,
+        ) + referencePrice(BY_ID[id]);
+      if (amount > state.me.budget) return;
+      wish[c] = id;
+    }
     if (b.dataset.mode === "customer") {
       const o = cheapestOffer(state, id);
       if (o) cart[c] = { seller: o.seller, part: id };

@@ -506,3 +506,36 @@ body.building {
   top: 0;
   z-index: 3;
 }
+
+.coin-income {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #fff0b6;
+  border-radius: 16px;
+  padding: 12px;
+  margin-top: 10px;
+  color: #715119;
+}
+.coin-income small {
+  font-size: 11px;
+}
+.coin-income strong {
+  font-size: 18px;
+}
+@media (max-width: 600px) {
+  .coin-income {
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px;
+  }
+  .coin-income small {
+    width: 100%;
+    text-align: center;
+    font-size: 10px;
+  }
+  .coin-income strong {
+    font-size: 15px;
+  }
+}

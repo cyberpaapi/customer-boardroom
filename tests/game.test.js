@@ -180,3 +180,21 @@ test("component data complete and distinct", () => {
   assert.equal(new Set(PARTS.map((p) => p.id)).size, 15);
   assert.ok(PARTS.every((p) => p.name && p.detail && p.cost > 0));
 });
+
+test("free basic build is always available with no seller offers and no profit", () => {
+  const s = toPlan();
+  apply(s, "h", "NEXT", { force: true });
+  const basic = PARTS.filter((p) => p.tier === 1).map((p) => ({
+    seller: "__basic__",
+    part: p.id,
+  }));
+  apply(s, "c0", "BUY", { lines: basic });
+  assert.equal(s.orders[0].total, 0);
+  assert.equal(shopStats(s, "s0").profit, 0);
+  assert.throws(() =>
+    apply(s, "c1", "BUY", {
+      lines: basic.map((l, i) => (i === 0 ? { ...l, part: "cpu3" } : l)),
+    }),
+  );
+  assert.equal(s.players.find((p) => p.id === "c1").done, false);
+});
