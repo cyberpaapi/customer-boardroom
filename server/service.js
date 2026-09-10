@@ -9,7 +9,7 @@ async function body(req){if(req.body&&typeof req.body==='object')return req.body
 function identity(req,data){const t=(req.headers.authorization||'').replace(/^Bearer /,'');const m=data.members[hash(t)];assert(m,'Your saved seat could not be verified. Rejoin the room.');return m.id;}
 export async function handler(req,res){
  res.setHeader('Cache-Control','no-store');const origin=req.headers.origin;if(origin&&!allowed.includes(origin))return send(res,403,{error:'Origin not allowed.'});res.setHeader('Access-Control-Allow-Origin',origin||allowed[0]);res.setHeader('Vary','Origin');res.setHeader('Access-Control-Allow-Headers','Content-Type,Authorization');res.setHeader('Access-Control-Allow-Methods','GET,POST,OPTIONS');if(req.method==='OPTIONS'){res.statusCode=204;res.end();return;}
- const u=new URL(req.url,'http://server'),route=u.searchParams.get('route')||u.pathname,code=route.split('/')[2],tail=route.split('/').pop();
+ const u=new URL(req.url,'http://server'),route=(u.searchParams.get('route')||u.pathname).replace(/\/+$/,''),code=route.split('/')[2],tail=route.split('/').pop();
  try{
   if(route==='/health')return send(res,200,{ok:true,configured:!!process.env.DATABASE_URL||!!process.env.LOCAL_STORE_DIR,service:'customer-boardroom',transport:'sse',version:'1.0.0'});
   if(route==='/rooms'){
