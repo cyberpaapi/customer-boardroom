@@ -103,42 +103,34 @@ test("seller privacy before round 2 and anonymous insight afterwards", () => {
   assert.ok(!JSON.stringify(x).includes("Customer 0"));
   assert.ok(!JSON.stringify(x).includes('trials":[111'));
 });
-test("stock limits, prices, capital and immutable planning phases", () => {
+test("unlimited offers have no capital limit; price and phase rules remain", () => {
   const s = toPlan();
+  apply(s, "s0", "SAVE_SHOP", {
+    offers: PARTS.map((p) => ({ part: p.id, enabled: true, price: p.cost })),
+  });
+  assert.equal(shopStats(s, "s0").spend, 0);
+  assert.equal(shopStats(s, "s0").profit, 0);
   assert.throws(() =>
-    apply(s, "s0", "SAVE_SHOP", {
-      offers: [{ part: "cpu1", stock: 3, price: 80 }],
-    }),
+    apply(s, "s0", "SAVE_SHOP", { offers: [{ part: "cpu1", price: 79 }] }),
   );
-  assert.throws(() =>
-    apply(s, "s0", "SAVE_SHOP", {
-      offers: [{ part: "cpu1", stock: 1, price: 79 }],
-    }),
-  );
-  assert.throws(() =>
-    apply(s, "s0", "SAVE_SHOP", {
-      offers: PARTS.map((p) => ({ part: p.id, stock: 2, price: p.cost })),
-    }),
-  );
-  stock(s);
   apply(s, "h", "NEXT", { force: true });
   assert.throws(() => stock(s));
 });
-test("complete PC purchases debit stocks atomically, reject duplicates, compute net profit", () => {
+test("complete PC purchases record actual costs, reject duplicates, compute net profit", () => {
   const s = toPlan();
   stock(s);
   apply(s, "h", "NEXT", { force: true });
   apply(s, "c0", "BUY", { lines: lines() });
   assert.equal(shopStats(s, "s0").revenue, 360);
-  assert.equal(shopStats(s, "s0").spend, 520);
-  assert.equal(shopStats(s, "s0").profit, -160);
+  assert.equal(shopStats(s, "s0").spend, 260);
+  assert.equal(shopStats(s, "s0").profit, 100);
   assert.throws(() => apply(s, "c0", "BUY", { lines: lines() }));
   assert.equal(s.orders.length, 1);
   assert.throws(() => apply(s, "c1", "BUY", { lines: lines().slice(0, 4) }));
   apply(s, "c1", "BUY", { lines: lines() });
   assert.equal(shopStats(s, "s0").profit, 200);
 });
-test("overspending and sold-out baskets never partially apply", () => {
+test("overspending is rejected and unlimited offers never sell out", () => {
   const s = toPlan();
   stock(s, "s0", 1);
   apply(s, "h", "NEXT", { force: true });
@@ -147,22 +139,20 @@ test("overspending and sold-out baskets never partially apply", () => {
   assert.equal(shopStats(s, "s0").sold, 0);
   apply(s, "c1", "BUY", { lines: lines() });
   s.players[1].budget = 600;
-  assert.throws(() => apply(s, "c0", "BUY", { lines: lines() }));
-  assert.equal(shopStats(s, "s0").sold, 5);
+  apply(s, "c0", "BUY", { lines: lines() });
+  assert.equal(shopStats(s, "s0").sold, 10);
 });
-test("round 2 restores same budget, wishlist and capital, clears stock and passes", () => {
+test("round 2 restores same budget and wishlist, clears offers and passes", () => {
   const s = toPlan();
   stock(s);
   apply(s, "h", "NEXT", { force: true });
   apply(s, "c0", "BUY", { lines: lines() });
   apply(s, "c1", "PASS");
   apply(s, "h", "NEXT");
-  const b = s.players[1].budget,
-    cap = s.capital;
+  const b = s.players[1].budget;
   apply(s, "h", "NEXT");
   assert.equal(s.phase, "plan2");
   assert.equal(s.players[1].budget, b);
-  assert.equal(s.capital, cap);
   assert.deepEqual(s.offers, {});
   assert.equal(s.players[1].done, false);
   assert.deepEqual(s.players[1].wishlist, blankBuild());

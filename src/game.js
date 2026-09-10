@@ -183,7 +183,6 @@ export function createState(code, hostId, now) {
     offers: {},
     orders: [],
     results: {},
-    capital: 0,
     createdAt: now,
     expiresAt: now + 86400000,
     log: [],
@@ -215,9 +214,11 @@ export function addPlayer(s, p) {
     done: false,
   });
 }
+export const offerEnabled = (o) =>
+  !!o && (o.enabled ?? (o.stock === undefined || o.stock > 0));
 export function shopStats(s, id) {
   const list = Object.values(s.offers[id] || {});
-  const spend = list.reduce((n, o) => n + o.stock * BY_ID[o.part].cost, 0);
+  const spend = list.reduce((n, o) => n + o.sold * BY_ID[o.part].cost, 0);
   const revenue = list.reduce((n, o) => n + o.sold * o.price, 0);
   const sold = list.reduce((n, o) => n + o.sold, 0);
   return {
@@ -225,7 +226,6 @@ export function shopStats(s, id) {
     revenue,
     profit: revenue - spend,
     sold,
-    unsold: list.reduce((n, o) => n + o.stock - o.sold, 0),
   };
 }
 export function budgetBand(b) {
@@ -303,7 +303,6 @@ export function apply(s, actorId, type, payload = {}, now = Date.now()) {
       customers(s).forEach((p) => {
         if (!p.budget) p.budget = 600;
       });
-      s.capital = Math.max(4000, customers(s).length * 700);
       startPlanning(s, 1);
     }
     if (s.phase === "plan1" || s.phase === "plan2") {
@@ -334,7 +333,6 @@ export function apply(s, actorId, type, payload = {}, now = Date.now()) {
       offers: {},
       orders: [],
       results: {},
-      capital: 0,
     });
     s.players.forEach((p) => {
       p.trials = [];
@@ -409,25 +407,22 @@ export function apply(s, actorId, type, payload = {}, now = Date.now()) {
     for (const x of payload.offers) {
       assert(BY_ID[x.part] && !os[x.part], "Unknown or duplicate component.");
       assert(
-        Number.isInteger(x.stock) &&
-          x.stock >= 0 &&
-          x.stock <= customers(s).length,
-        "Stock cannot exceed the number of customers.",
-      );
-      assert(
         Number.isInteger(x.price) &&
           x.price >= BY_ID[x.part].cost &&
           x.price <= 10000,
         "Prices must be whole coins, at least the wholesale cost and at most 10,000.",
       );
-      os[x.part] = { part: x.part, stock: x.stock, price: x.price, sold: 0 };
+      os[x.part] = {
+        part: x.part,
+        enabled: x.enabled ?? (x.stock === undefined || x.stock > 0),
+        price: x.price,
+        sold: 0,
+      };
     }
-    const spend = Object.values(os).reduce(
-      (n, o) => n + o.stock * BY_ID[o.part].cost,
-      0,
+    assert(
+      Object.values(os).some(offerEnabled),
+      "Choose at least one component to offer.",
     );
-    assert(spend <= s.capital, "This stock exceeds your working capital.");
-    assert(spend > 0, "Stock at least one component.");
     s.offers[p.id] = os;
     p.ready = true;
   } else if (type === "BUY") {
@@ -447,7 +442,10 @@ export function apply(s, actorId, type, payload = {}, now = Date.now()) {
         o = s.offers[l.seller]?.[l.part];
       assert(part && !seen.has(part.category), "Choose one part per category.");
       seen.add(part.category);
-      assert(o && o.stock > o.sold, "A part sold out. Update your build.");
+      assert(
+        offerEnabled(o),
+        "This component is not offered. Update your build.",
+      );
       total += o.price;
       return {
         seller: l.seller,
@@ -489,7 +487,6 @@ export function view(s, id) {
     revision: s.revision,
     phase: s.phase,
     round: s.round,
-    capital: s.capital,
     expiresAt: s.expiresAt,
     me: { ...p },
     counts: {
@@ -532,7 +529,22 @@ export function view(s, id) {
     }));
   for (const [r, result] of Object.entries(s.results)) {
     v.results[r] = {
-      sellers: result.sellers,
+      sellers: result.sellers.map((seller) => {
+        const lines = s.orders
+          .filter((o) => String(o.round) === r)
+          .flatMap((o) => o.lines)
+          .filter((l) => l.seller === seller.id);
+        const spend = lines.reduce((n, l) => n + l.cost, 0),
+          revenue = lines.reduce((n, l) => n + l.price, 0);
+        return {
+          id: seller.id,
+          name: seller.name,
+          spend,
+          revenue,
+          profit: revenue - spend,
+          sold: lines.length,
+        };
+      }),
       buyers: result.customers.filter((c) => c.bought).length,
       totalCustomers: result.customers.length,
       matchedParts: result.customers.reduce((n, c) => n + c.match, 0),

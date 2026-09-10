@@ -11,6 +11,7 @@ let builderStep = 0,
 import QRCode from "qrcode";
 import { RoomClient } from "./network.js";
 import {
+  offerEnabled,
   PARTS,
   BY_ID,
   CATEGORIES,
@@ -148,14 +149,14 @@ function host() {
       ],
     )}<p class="note">If you move on early, unfinished customers receive 600 coins. Their default wishlist is included in the insight counts.</p></section>`;
   else if (state.phase === "plan1")
-    center = `<div class="host-grid"><section class="card qr-card"><h2>Invite the three sellers</h2><div class="tabs">${[0, 1, 2].map((n) => btn("Seller " + (n + 1), "seller-qr-" + n, sellerQR === n ? "active" : "ghost")).join("")}</div>${qr(sellerURL, "Seller " + (sellerQR + 1) + " · one person per invitation")}<p class="fine">Display each QR to its seller. Claimed invitations cannot create another seat.</p></section><section class="card"><h2>Let them make their guesses.</h2><p>Each seller chooses components, quantities and selling prices. Their working capital is identical: <b>${money(state.capital)} coins</b>.</p><p>Unsold stock has no resale value in this experiment. Profit = sales revenue − all inventory purchased.</p>${sellerList()}<p class="note">Sellers see neither customer budgets nor preferences in round one.</p></section></div>`;
+    center = `<div class="host-grid"><section class="card qr-card"><h2>Invite the three sellers</h2><div class="tabs">${[0, 1, 2].map((n) => btn("Seller " + (n + 1), "seller-qr-" + n, sellerQR === n ? "active" : "ghost")).join("")}</div>${qr(sellerURL, "Seller " + (sellerQR + 1) + " · one person per invitation")}<p class="fine">Display each QR to its seller. Claimed invitations cannot create another seat.</p></section><section class="card"><h2>Let them make their guesses.</h2><p>Each seller chooses which components to offer and sets prices. Every offered component has unlimited supply.</p><p>Profit is the margin earned on actual sales. There are no inventory costs or supply shortages.</p>${sellerList()}<p class="note">Sellers see neither customer budgets nor preferences in round one.</p></section></div>`;
   else if (state.phase.startsWith("shop"))
     center = `<section class="card"><h2>The market is open.</h2>${stats([
       [`${c.finished}/${c.customers}`, "customers finished"],
       [state.round, "market round"],
     ])}<p>Customers can mix parts from all three shops. Every completed purchase contains five parts. They may also keep their coins and pass.</p></section>`;
   else if (state.phase === "plan2")
-    center = `<section class="card"><h2>Now the customer is in the boardroom.</h2><p>Sellers can see anonymous budget bands, intended uses and the components customers wanted. They get fresh inventory and the same working capital. Customers keep their original income and wishlist.</p>${sellerList()}</section>${insightPanel()}`;
+    center = `<section class="card"><h2>Now the customer is in the boardroom.</h2><p>Sellers can see anonymous budget bands, intended uses and the components customers wanted. They can revise their offers and prices. Customers keep their original income and wishlist.</p>${sellerList()}</section>${insightPanel()}`;
   if (
     state.phase === "result1" ||
     state.phase === "final" ||
@@ -217,7 +218,7 @@ function customer() {
       `${money(p.budget)} coins. Your choices.`,
       state.phase === "plan2"
         ? "A fresh market is coming. Your original budget is restored."
-        : "The three sellers are stocking their shops.",
+        : "The three sellers are choosing their offers.",
     ) +
     `<section class="card"><h2>Your PC wishlist</h2><p>${esc(p.use)} · You can adjust what you actually buy when the market opens.</p>${buildList(p.wishlist)}<div class="note">${state.phase === "plan2" ? "Sellers now see anonymous budget bands and preferences. They still cannot see your reaction results." : "Sellers do not know your budget or preferences yet."}</div></section>`
   );
@@ -266,7 +267,7 @@ function seller() {
         "Your market is coming.",
         "The class is earning its income. Customer scores and budgets are private.",
       ) +
-      `<section class="card"><h2>Your job: make the most profit.</h2><p>Stock PC parts, choose prices, and attract customers. You pay for everything you stock, including unsold parts.</p></section>`
+      `<section class="card"><h2>Your job: make the most profit.</h2><p>Choose components and prices that customers want. Supply is unlimited; profit comes from the margin on each sale.</p></section>`
     );
   if (
     state.phase === "result1" ||
@@ -286,24 +287,24 @@ function seller() {
       title(
         "SELLER · " + esc(p.name),
         "Your shop is open.",
-        "Prices and quantities are locked for this market.",
+        "Offers and prices are locked for this market.",
       ) +
       stats([
         [money(state.myStats.revenue), "revenue"],
         [money(state.myStats.profit), "profit / loss"],
-        [state.myStats.unsold, "parts still in stock"],
+        [state.myStats.sold, "components sold"],
       ]) +
-      `<section class="card"><h2>Live inventory</h2>${Object.values(
+      `<section class="card"><h2>Live sales</h2>${Object.values(
         state.offers[p.id] || {},
       )
-        .filter((o) => o.stock)
+        .filter(offerEnabled)
         .map(
           (o) =>
-            `<div class="stock-line"><span>${BY_ID[o.part].name}</span><span>${o.sold}/${o.stock} sold · ${money(o.price)} coins</span></div>`,
+            `<div class="stock-line"><span>${BY_ID[o.part].name}</span><span>${o.sold} sold · ${money(o.price)} coins</span></div>`,
         )
         .join(
           "",
-        )}<p class="note">Profit = revenue − all inventory cost. Unsold stock has zero recovery value.</p></section>`
+        )}<p class="note">Profit = revenue − the cost of components actually sold. Supply is unlimited.</p></section>`
     );
   const key = state.round + ":" + p.id;
   if (shopKey !== key) {
@@ -314,11 +315,18 @@ function seller() {
         {
           part: x.id,
           price: state.offers[p.id]?.[x.id]?.price || Math.round(x.cost * 1.5),
-          stock: state.offers[p.id]?.[x.id]?.stock || 0,
+          enabled: state.offers[p.id]?.[x.id]
+            ? offerEnabled(state.offers[p.id][x.id])
+            : x.tier === 1,
         },
       ]),
     );
   }
+  for (const c of CATEGORIES)
+    if (!draftShop[previewBuild[c]]?.enabled)
+      previewBuild[c] =
+        PARTS.find((p) => p.category === c && draftShop[p.id]?.enabled)?.id ||
+        c + "1";
   return (
     (state.round === 2
       ? `<details class="customer-insight-toggle"><summary>View anonymous customer insights ↗</summary>${insightPanel()}</details>`
@@ -337,12 +345,6 @@ function buildScreen(mode) {
     draftShop,
     busy,
   });
-}
-function investment() {
-  return PARTS.reduce(
-    (n, p) => n + (Number(draftShop[p.id]?.stock) || 0) * p.cost,
-    0,
-  );
 }
 function market() {
   const p = state.me;
@@ -371,11 +373,11 @@ function cartTotal() {
 function results() {
   const rs = state.results,
     final = !!rs[2];
-  return `<section class="results"><div class="section-heading"><h2>${final ? "Did insight improve profit?" : "The first market, by the numbers."}</h2><p>${final ? "Same customers. Same income. Fresh inventory. Compare what actually happened." : "Prices, availability and customer choices all shaped this result."}</p></div><div class="result-grid">${state.sellers
+  return `<section class="results"><div class="section-heading"><h2>${final ? "Did insight improve profit?" : "The first market, by the numbers."}</h2><p>${final ? "Same customers. Same income. Unlimited supply. Compare what actually happened." : "Prices, offered components and customer choices all shaped this result."}</p></div><div class="result-grid">${state.sellers
     .map((s) => {
       const a = rs[1]?.sellers.find((x) => x.id === s.id),
         b = rs[2]?.sellers.find((x) => x.id === s.id);
-      return `<article class="card result-card"><span class="eyebrow">${esc(s.name)}</span><h3>${money((b || a)?.profit)} <small>coins profit</small></h3>${a ? `<div class="stock-line"><span>Round 1 · blind</span><b>${money(a.profit)}</b></div>` : ""}${b ? `<div class="stock-line"><span>Round 2 · informed</span><b>${money(b.profit)}</b></div><div class="profit-change ${b.profit - a.profit >= 0 ? "positive" : "negative"}">${b.profit >= a.profit ? "+" : ""}${money(b.profit - a.profit)} change</div>` : ""}<p class="fine">${(b || a)?.sold || 0} parts sold · ${(b || a)?.unsold || 0} unsold in ${b ? "round 2" : "round 1"}</p></article>`;
+      return `<article class="card result-card"><span class="eyebrow">${esc(s.name)}</span><h3>${money((b || a)?.profit)} <small>coins profit</small></h3>${a ? `<div class="stock-line"><span>Round 1 · blind</span><b>${money(a.profit)}</b></div>` : ""}${b ? `<div class="stock-line"><span>Round 2 · informed</span><b>${money(b.profit)}</b></div><div class="profit-change ${b.profit - a.profit >= 0 ? "positive" : "negative"}">${b.profit >= a.profit ? "+" : ""}${money(b.profit - a.profit)} change</div>` : ""}<p class="fine">${(b || a)?.sold || 0} parts sold in ${b ? "round 2" : "round 1"}</p></article>`;
     })
     .join("")}</div>${Object.entries(rs)
     .map(
@@ -384,7 +386,7 @@ function results() {
     )
     .join(
       "",
-    )}<section class="discussion card"><div class="eyebrow">ASK THE ROOM</div><h2>${final ? "Which decision changed because you understood the customer?" : "What did you assume—and what surprised you?"}</h2><p>${final ? "Better information can improve decisions, but it does not guarantee more profit. Competition, stock choices, prices and learning from the first round also matter." : "Did you stock what people wanted, at prices they could afford? What would you want to know before buying stock again?"}</p>${final ? "<p>Compare total market profit as well as individual winners. This classroom experiment illustrates a mechanism; it is not proof that information alone caused the change.</p>" : ""}</section></section>`;
+    )}<section class="discussion card"><div class="eyebrow">ASK THE ROOM</div><h2>${final ? "Which decision changed because you understood the customer?" : "What did you assume—and what surprised you?"}</h2><p>${final ? "Better information can improve decisions, but it does not guarantee more profit. Competition, component choices, prices and learning from the first round also matter." : "Did you offer what people wanted, at prices they could afford? What would you want to know before making your next offer?"}</p>${final ? "<p>Compare total market profit as well as individual winners. This classroom experiment illustrates a mechanism; it is not proof that information alone caused the change.</p>" : ""}</section></section>`;
 }
 function ask(message) {
   return new Promise((resolve) => {
@@ -511,8 +513,11 @@ root.addEventListener("input", (e) => {
     draftShop[e.target.dataset.part][e.target.dataset.field] = Number(
       e.target.value,
     );
-    document.querySelector("#investment").textContent =
-      money(investment()) + " / " + money(state.capital);
+    const margin = document.querySelector("#unit-margin");
+    if (margin)
+      margin.textContent = money(
+        Number(e.target.value) - BY_ID[e.target.dataset.part].cost,
+      );
   }
   if (e.target.dataset.wish) wish[e.target.dataset.wish] = e.target.value;
   if (e.target.id === "use") use = e.target.value;
@@ -558,6 +563,9 @@ root.addEventListener("click", async (e) => {
     const id = b.dataset.component,
       c = BY_ID[id].category;
     previewBuild[c] = id;
+    if (b.dataset.mode === "seller")
+      for (const p of PARTS.filter((p) => p.category === c))
+        draftShop[p.id].enabled = p.id === id;
     if (b.dataset.mode === "preferences") wish[c] = id;
     if (b.dataset.mode === "customer") {
       const o = cheapestOffer(state, id);
