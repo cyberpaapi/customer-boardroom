@@ -3,7 +3,7 @@ import {createState,addPlayer,apply,view,assert} from '../src/game.js';
 import {store} from './store.js';
 const hash=s=>createHash('sha256').update(s).digest('hex');
 const token=()=>randomBytes(32).toString('base64url');
-const allowed=(process.env.ALLOWED_ORIGINS||'https://cyberpaapi.github.io,http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:4173').split(',');
+const allowed=(process.env.ALLOWED_ORIGINS||'https://cyberpaapi.github.io,https://customer-boardroom.vercel.app,http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:4173').split(',');
 const send=(res,status,data)=>{res.statusCode=status;res.setHeader('Content-Type','application/json');res.end(JSON.stringify(data));};
 async function body(req){if(req.body&&typeof req.body==='object')return req.body;let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>65536)throw Error('Request too large.');}return raw?JSON.parse(raw):{};}
 function identity(req,data){const t=(req.headers.authorization||'').replace(/^Bearer /,'');const m=data.members[hash(t)];assert(m,'Your saved seat could not be verified. Rejoin the room.');return m.id;}
@@ -19,8 +19,9 @@ export async function handler(req,res){
   assert(/^[A-HJ-NP-Z2-9]{6}$/.test(code||''),'Enter a valid room code.');let data=await store.get(code);assert(data&&data.state.expiresAt>Date.now(),'That room does not exist or has expired.');
   if(tail==='join'){
    assert(req.method==='POST','Method not allowed.');const b=await body(req);const ip=req.headers['x-forwarded-for']?.split(',')[0]||req.socket?.remoteAddress||'unknown';assert(await store.limit('join:'+hash(ip),300),'Too many join attempts. Wait a moment.');
-   for(let retry=0;retry<25;retry++){const revision=data.state.revision,id=randomUUID(),t=token(),role=b.invite?'seller':'customer';let inv;if(role==='seller'){assert(data.state.phase==='plan1','Seller invitations open after the reaction round.');inv=data.invites.find(i=>i.key===b.invite);assert(inv&&!inv.claimed,'This seller invitation is invalid or already claimed.');}
-    addPlayer(data.state,{id,name:String(b.name||'').trim(),role});data.members[hash(t)]={id};if(inv)inv.claimed=id;data.state.revision++;if(await store.cas(code,revision,data))return send(res,200,{token:t,id,snapshot:view(data.state,id)});data=await store.get(code);
+   if(b.resumeToken)assert(typeof b.resumeToken==='string'&&/^[a-zA-Z0-9_-]{64,90}$/.test(b.resumeToken),'Invalid join credential.');const t=b.resumeToken||token();
+   for(let retry=0;retry<70;retry++){const existing=data.members[hash(t)];if(existing)return send(res,200,{token:t,id:existing.id,snapshot:view(data.state,existing.id)});const revision=data.state.revision,id=randomUUID(),role=b.invite?'seller':'customer';let inv;if(role==='seller'){assert(data.state.phase==='plan1','Seller invitations open after the reaction round.');inv=data.invites.find(i=>i.key===b.invite);assert(inv&&!inv.claimed,'This seller invitation is invalid or already claimed.');}
+    addPlayer(data.state,{id,name:String(b.name||'').trim(),role});data.members[hash(t)]={id};if(inv)inv.claimed=id;data.state.revision++;if(await store.cas(code,revision,data))return send(res,200,{token:t,id,snapshot:view(data.state,id)});await new Promise(r=>setTimeout(r,20+Math.random()*150));data=await store.get(code);
    }throw Error('The room is busy. Please join again.');
   }
   const id=identity(req,data);
