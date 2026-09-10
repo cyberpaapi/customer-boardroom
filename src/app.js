@@ -12,6 +12,7 @@ import QRCode from "qrcode";
 import { RoomClient } from "./network.js";
 import {
   BUDGET_OPTIONS,
+  linePrice,
   referencePrice,
   offerEnabled,
   PARTS,
@@ -363,7 +364,7 @@ function market() {
 }
 function cartTotal() {
   return Object.values(cart).reduce(
-    (n, l) => n + (state.offers[l.seller]?.[l.part]?.price || 0),
+    (n, l) => n + linePrice(state,l),
     0,
   );
 }

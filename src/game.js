@@ -136,6 +136,8 @@ export const PARTS = [
     tier: 3,
   },
 ];
+export const STANDARD_SELLER = "__standard__";
+export const linePrice = (state,line) => !line ? 0 : line.seller===STANDARD_SELLER ? referencePrice(BY_ID[line.part]) : state.offers[line.seller]?.[line.part]?.price || 0;
 export const BASIC_SELLER = "__basic__";
 export const referencePrice = (part) =>
   part.tier === 1 ? 0 : Math.round(part.cost * 1.5);
@@ -444,6 +446,7 @@ export function apply(s, actorId, type, payload = {}, now = Date.now()) {
         o = s.offers[l.seller]?.[l.part];
       assert(part && !seen.has(part.category), "Choose one part per category.");
       seen.add(part.category);
+      if(l.seller===STANDARD_SELLER){const price=referencePrice(part);total+=price;return {seller:STANDARD_SELLER,part:part.id,price,cost:part.tier===1?0:part.cost};}
       if (l.seller === BASIC_SELLER) {
         assert(part.tier === 1, "Only basic components are free.");
         return { seller: BASIC_SELLER, part: l.part, price: 0, cost: 0 };
@@ -462,7 +465,7 @@ export function apply(s, actorId, type, payload = {}, now = Date.now()) {
     });
     assert(total <= p.budget, "Your build costs more than your budget.");
     for (const l of lines)
-      if (l.seller !== BASIC_SELLER) s.offers[l.seller][l.part].sold++;
+      if (l.seller !== BASIC_SELLER && l.seller !== STANDARD_SELLER) s.offers[l.seller][l.part].sold++;
     s.orders.push({ buyer: p.id, round: s.round, lines, total });
     p.done = true;
   } else if (type === "PASS") {

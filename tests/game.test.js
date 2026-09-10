@@ -228,3 +228,10 @@ test('presenter advances immediately through every phase without waiting for par
  assert.equal(s.players[1].budget,600);
  const empty=createState('ABC234','h',0);apply(empty,'h','NEXT');assert.equal(empty.phase,'reaction');
 });
+
+test('all components can be purchased without seller offers at authoritative standard prices',()=>{
+ const s=toPlan();apply(s,'h','NEXT');s.players[1].budget=5000;
+ const lines=PARTS.filter(p=>p.tier===2).map(p=>({seller:'__standard__',part:p.id,price:0}));
+ apply(s,'c0','BUY',{lines});assert.equal(s.orders[0].total,1290);assert.equal(shopStats(s,'s0').revenue,0);
+ s.players[2].budget=100;assert.throws(()=>apply(s,'c1','BUY',{lines}));assert.equal(s.orders.length,1);
+});

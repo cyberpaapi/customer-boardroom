@@ -1,5 +1,6 @@
 import {
   BUDGET_OPTIONS,
+  STANDARD_SELLER, linePrice,
   BASIC_SELLER,
   referencePrice,
   offerEnabled,
@@ -40,7 +41,7 @@ export function cheapestOffer(state, part) {
     .map((s) => ({ seller: s.id, name: s.name, ...state.offers[s.id]?.[part] }))
     .filter((o) => o.part && offerEnabled(o))
     .sort((a, b) => a.price - b.price || a.seller.localeCompare(b.seller));
-  if (!offers.length) return null;
+  if (!offers.length) return {seller:STANDARD_SELLER,name:"Standard price",part,price:referencePrice(BY_ID[part]),enabled:true};
   const best = offers.filter((o) => o.price === offers[0].price),
     seed = [...state.me.id].reduce((a, c) => a + c.charCodeAt(0), 0);
   return best[seed % best.length];
@@ -77,7 +78,7 @@ export function builderScreen({
   const total = prefs
       ? Object.values(wish).reduce((n, id) => n + referencePrice(BY_ID[id]), 0)
       : Object.values(cart).reduce(
-          (a, l) => a + (state.offers[l.seller]?.[l.part]?.price || 0),
+          (a, l) => a + linePrice(state,l),
           0,
         ),
     investment = PARTS.filter((p) => draftShop[p.id]?.enabled).length;
@@ -109,7 +110,7 @@ export function builderScreen({
           "<p>Your shop is empty. Go back and choose components.</p>"
         : CATEGORIES.map(
             (cat) =>
-              `<button data-step="${CATEGORIES.indexOf(cat)}" class="review-part">${partImage(build[cat])}<span><small>${LABELS[cat]}</small><b>${BY_ID[build[cat]].name}</b><small>${money(prefs ? referencePrice(BY_ID[build[cat]]) : state.offers[cart[cat]?.seller]?.[cart[cat]?.part]?.price || 0)}</small></span><span>Change ↗</span></button>`,
+              `<button data-step="${CATEGORIES.indexOf(cat)}" class="review-part">${partImage(build[cat])}<span><small>${LABELS[cat]}</small><b>${BY_ID[build[cat]].name}</b><small>${money(prefs ? referencePrice(BY_ID[build[cat]]) : linePrice(state,cart[cat]))}</small></span><span>Change ↗</span></button>`,
           ).join("")
     }</div>${prefs ? `<label class="purpose-label">What will you use it for?<select id="use">${["Everyday work", "Gaming", "Creative work", "Coding"].map((x) => `<option ${x === use ? "selected" : ""}>${x}</option>`).join("")}</select></label>` : ""}`;
   } else
@@ -127,9 +128,9 @@ export function builderScreen({
         const price = prefs ? referencePrice(p) : offer?.price || 0;
         const oldPrice = prefs
           ? referencePrice(BY_ID[wish[c]])
-          : state.offers[cart[c]?.seller]?.[cart[c]?.part]?.price || 0;
+          : linePrice(state,cart[c]);
         const tooExpensive = !seller && total - oldPrice + price > budget;
-        return `<button class="component-option choice-${i} ${selected ? "selected" : ""}" data-component="${p.id}" data-mode="${mode}" ${missing || tooExpensive || busy || (seller && p.tier === 1) ? "disabled" : ""} aria-pressed="${selected}">${partImage(p.id)}<span><b>${p.name}</b><small>${seller ? (p.tier === 1 ? "₹0 · included free for everyone" : "Unit cost " + money(p.cost) + "") : prefs ? "" + money(price) + " · " + (p.tier === 1 ? "Basic · slow spec" : p.detail) : offer ? "" + money(offer.price) + " · " + esc(offer.name) : "Not offered by any seller"}</small></span><span class="choice-check">${selected ? "✓" : ["A", "B", "C"][i]}</span></button>`;
+        return `<button class="component-option choice-${i} ${selected ? "selected" : ""}" data-component="${p.id}" data-mode="${mode}" ${missing || tooExpensive || busy || (seller && p.tier === 1) ? "disabled" : ""} aria-pressed="${selected}">${partImage(p.id)}<span><b>${p.name}</b><small>${seller ? (p.tier === 1 ? "₹0 · included free for everyone" : "Unit cost " + money(p.cost) + "") : prefs ? "" + money(price) + " · " + (p.tier === 1 ? "Basic · slow spec" : p.detail) : offer ? "" + money(offer.price) + " · " + esc(offer.name) : "Standard price"}</small></span><span class="choice-check">${selected ? "✓" : ["A", "B", "C"][i]}</span></button>`;
       })
       .join("")}</div>`;
   if (seller && !review) {
