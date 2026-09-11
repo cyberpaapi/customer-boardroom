@@ -1,4 +1,6 @@
 import "./styles.css";
+import "./charts.css";
+import {barChart} from "./charts.js";
 import "./builder.css";
 import {
   builderScreen,
@@ -247,13 +249,7 @@ function reactionScreen() {
 function insightPanel() {
   const i = state.insights;
   if (!i) return "";
-  const bars = (data) =>
-    data
-      .map(
-        (x) =>
-          `<div class="bar-row"><div><span>${esc(x.label || x.name)}</span><b>${x.count}</b></div><div class="bar-track"><span style="width:${i.count ? Math.round((x.count / i.count) * 100) : 0}%"></span></div></div>`,
-      )
-      .join("");
+  const bars = data => barChart(data.map(x=>({label:x.label||x.name,value:x.count})),{label:'Number of customers',maximum:i.count});
   return `<section class="insights"><div class="section-heading"><div class="eyebrow">THE CUSTOMER FILE</div><h2>Less guessing. More listening.</h2><p>Anonymous totals, not individual records. ${i.responses} of ${i.count} customers saved preferences.</p></div><div class="insight-grid"><article class="card"><h3>What they can spend</h3>${bars(i.bands)}</article><article class="card"><h3>What they’ll use it for</h3>${bars(i.uses)}</article>${CATEGORIES.map((c) => `<article class="card"><h3>${LABELS[c]} wishlist</h3>${bars(i.parts.filter((p) => p.category === c))}</article>`).join("")}</div><p class="fine">Wishlist demand is not a purchase commitment. Match preferences with affordability, and remember two other sellers are competing for the same customers.</p></section>`;
 }
 function seller() {
@@ -370,7 +366,8 @@ function cartTotal() {
 }
 function results() {
  const result=state.results[1];
- return `<section class="results"><div class="section-heading"><h2>Seller profits</h2><p>One market. Here is how the sellers’ offers matched customer choices.</p></div><div class="result-grid">${state.sellers.map(s=>{const r=result?.sellers.find(x=>x.id===s.id);return `<article class="card result-card"><span class="eyebrow">${esc(s.name)}</span><h3>${money(r?.profit)} <small>profit (INR)</small></h3><p>${r?.sold||0} components sold</p><p class="fine">Sales ${money(r?.revenue)} · component costs ${money(r?.spend)}</p></article>`;}).join('')}</div>${result?`<p class="result-summary"><b>${result.buyers}/${result.totalCustomers}</b> customers completed a PC. <b>${result.matchedParts}</b> purchased parts matched their wishlists.</p>`:''}${insightPanel()}<section class="discussion card"><div class="eyebrow">THE CUSTOMER IN THE BOARDROOM</div><h2>What would you have decided differently if you had known this?</h2><p>Compare customer budgets and preferences with what the sellers offered. Which assumptions matched the class, and which missed the mark?</p><p>The lesson: bring customer evidence into business decisions. We end with reflection; this single round does not measure how much insights would increase profit.</p></section></section>`;
+ const profitChart=barChart(state.sellers.map(s=>({label:s.name,value:result?.sellers.find(x=>x.id===s.id)?.profit||0})),{label:"Profit (INR)",format:money});
+ return `<section class="results"><div class="section-heading"><h2>Seller profits</h2><p>One market. Here is how the sellers’ offers matched customer choices.</p></div><div class="profit-chart-card">${profitChart}</div><details class="profit-details"><summary>View sales and component costs</summary><div class="result-grid">${state.sellers.map(s=>{const r=result?.sellers.find(x=>x.id===s.id);return `<article class="card result-card"><span class="eyebrow">${esc(s.name)}</span><h3>${money(r?.profit)} <small>profit (INR)</small></h3><p>${r?.sold||0} components sold</p><p class="fine">Sales ${money(r?.revenue)} · component costs ${money(r?.spend)}</p></article>`;}).join('')}</div></details>${result?`<p class="result-summary"><b>${result.buyers}/${result.totalCustomers}</b> customers completed a PC. <b>${result.matchedParts}</b> purchased parts matched their wishlists.</p>`:''}${insightPanel()}<section class="discussion card"><div class="eyebrow">THE CUSTOMER IN THE BOARDROOM</div><h2>What would you have decided differently if you had known this?</h2><p>Compare customer budgets and preferences with what the sellers offered. Which assumptions matched the class, and which missed the mark?</p><p>The lesson: bring customer evidence into business decisions. We end with reflection; this single round does not measure how much insights would increase profit.</p></section></section>`;
 }
 function ask(message) {
   return new Promise((resolve) => {
