@@ -147,20 +147,17 @@ export const PHASES = [
   "reaction",
   "plan1",
   "shop1",
-  "result1",
-  "plan2",
-  "shop2",
   "final",
 ];
 export const PHASE_LABELS = {
   lobby: "Everyone in",
   reaction: "Choose your budget",
-  plan1: "Round 1 · Set your shop",
-  shop1: "Round 1 · Build your PC",
+  plan1: "Set your offers",
+  shop1: "Build your PC",
   result1: "Round 1 · The results",
   plan2: "Round 2 · Meet your customers",
   shop2: "Round 2 · Build again",
-  final: "The boardroom reveal",
+  final: "Customer insights & profits",
   ended: "Session ended",
 };
 export function coins(ms) {
@@ -302,8 +299,9 @@ export function apply(s, actorId, type, payload = {}, now = Date.now()) {
   const host = p.role === "host";
   if (type === "NEXT") {
     assert(host, "Only the presenter controls the phases.");
+    if(["result1","plan2","shop2"].includes(s.phase)){if(s.phase==="shop2")endRound(s);s.phase="final";return s;}
     const idx = PHASES.indexOf(s.phase);
-    assert(idx >= 0 && idx < 7, "This game is complete.");
+    assert(idx >= 0 && idx < PHASES.length - 1, "This game is complete.");
     if (s.phase === "reaction") {
       customers(s).forEach((p) => {
         if (!p.budget) p.budget = 600;
@@ -311,7 +309,6 @@ export function apply(s, actorId, type, payload = {}, now = Date.now()) {
       startPlanning(s, 1);
     }
     if (s.phase === "shop1" || s.phase === "shop2") endRound(s);
-    if (s.phase === "result1") startPlanning(s, 2);
     s.phase = PHASES[idx + 1];
   } else if (type === "FORCE_END") {
     assert(host, "Presenter only.");
@@ -486,7 +483,7 @@ export function view(s, id) {
   assert(p, "Invalid seat.");
   const host = p.role === "host";
   const reveal =
-    s.phase === "plan2" || s.phase === "shop2" || s.phase === "final";
+    s.phase === "final" || s.phase === "result1" || s.phase === "ended";
   const publicMarket =
     s.phase.startsWith("shop") ||
     s.phase === "result1" ||
@@ -562,6 +559,6 @@ export function view(s, id) {
     if (p.role === "customer")
       v.results[r].mine = result.customers.find((c) => c.id === p.id);
   }
-  if ((host || p.role === "seller") && reveal) v.insights = insights(s);
+  if (reveal) v.insights = insights(s);
   return v;
 }

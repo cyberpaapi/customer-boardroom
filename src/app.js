@@ -106,7 +106,7 @@ function shell(html) {
 }
 function home() {
   const saved = localStorage.getItem("boardroom:last");
-  return `<section class="home-grid"><div class="home-copy"><div class="eyebrow">THE CLASSROOM PC MARKET</div><h1>Your budget.<br>Your priorities.<br><em>Better business.</em></h1><p class="lead">Choose your budget. Build your next PC.<br>Can three sellers figure out what you want?</p><div class="steps"><span><b>01</b> Choose</span><span><b>02</b> Build</span><span><b>03</b> Discover</span></div></div><div class="hero-art"><img src="${import.meta.env.BASE_URL}hero.webp" alt="Playful purple PC, components, gold INR and a green reaction button" width="1200" height="800"></div><section class="entry card"><div class="tabs">${btn("Join the class", "join-tab", entry === "join" ? "active" : "ghost")}${btn("Present a session", "host-tab", entry === "host" ? "active" : "ghost")}</div>${entry === "join" ? `<h2>${invite ? "Your shop starts here." : "Your next PC starts here."}</h2><p>${invite ? "You are joining one of the three seller places." : "Scan the classroom QR or enter your room code."}</p><form id="join-form"><label>Your name<input id="name" name="name" required maxlength="24" autocomplete="nickname" placeholder="Name + initial"></label><label>Room code<input id="room" name="room" required maxlength="6" minlength="6" value="${esc(roomParam)}" placeholder="ABC234" autocapitalize="characters" style="text-transform:uppercase"></label><button class="button primary" ${busy ? "disabled" : ""}>${invite ? "Join as a seller" : "Let’s play"} <span>↗</span></button></form>` : `<h2>Bring the market to life.</h2><p>Create a room, project the customer QR, then invite three sellers after the budget survey.</p>${btn("Create a classroom", "create", "primary")}<p class="fine">No account needed. No customer-count cap. Rooms last 24 hours. Keep this browser open as your presenter control.</p>`}${saved && !roomParam ? btn("Resume room " + esc(saved), "resume-last", "ghost small") : ""}</section></section><section class="how-grid"><article><span class="number">01</span><h3>What would you spend?</h3><p>Choose your spending range in INR, then the components you value.</p></article><article><span class="number">02</span><h3>Build what you value.</h3><p>Mix parts from three shops. Performance, looks or value—you choose.</p></article><article><span class="number">03</span><h3>Know more. Decide better.</h3><p>Two markets, the same budgets. Round two gives sellers anonymous customer insights.</p></article></section>`;
+  return `<section class="home-grid"><div class="home-copy"><div class="eyebrow">THE CLASSROOM PC MARKET</div><h1>Your budget.<br>Your priorities.<br><em>Better business.</em></h1><p class="lead">Choose your budget. Build your next PC.<br>Can three sellers figure out what you want?</p><div class="steps"><span><b>01</b> Choose</span><span><b>02</b> Build</span><span><b>03</b> Discover</span></div></div><div class="hero-art"><img src="${import.meta.env.BASE_URL}hero.webp" alt="Playful purple PC, components, gold INR and a green reaction button" width="1200" height="800"></div><section class="entry card"><div class="tabs">${btn("Join the class", "join-tab", entry === "join" ? "active" : "ghost")}${btn("Present a session", "host-tab", entry === "host" ? "active" : "ghost")}</div>${entry === "join" ? `<h2>${invite ? "Your shop starts here." : "Your next PC starts here."}</h2><p>${invite ? "You are joining one of the three seller places." : "Scan the classroom QR or enter your room code."}</p><form id="join-form"><label>Your name<input id="name" name="name" required maxlength="24" autocomplete="nickname" placeholder="Name + initial"></label><label>Room code<input id="room" name="room" required maxlength="6" minlength="6" value="${esc(roomParam)}" placeholder="ABC234" autocapitalize="characters" style="text-transform:uppercase"></label><button class="button primary" ${busy ? "disabled" : ""}>${invite ? "Join as a seller" : "Let’s play"} <span>↗</span></button></form>` : `<h2>Bring the market to life.</h2><p>Create a room, project the customer QR, then invite three sellers after the budget survey.</p>${btn("Create a classroom", "create", "primary")}<p class="fine">No account needed. No customer-count cap. Rooms last 24 hours. Keep this browser open as your presenter control.</p>`}${saved && !roomParam ? btn("Resume room " + esc(saved), "resume-last", "ghost small") : ""}</section></section><section class="how-grid"><article><span class="number">01</span><h3>What would you spend?</h3><p>Choose your spending range in INR, then the components you value.</p></article><article><span class="number">02</span><h3>Build what you value.</h3><p>Mix parts from three shops. Performance, looks or value—you choose.</p></article><article><span class="number">03</span><h3>Know more. Decide better.</h3><p>One market, then reveal customer insights alongside seller profits.</p></article></section>`;
 }
 function title(kicker, title, subtitle = "") {
   return `<div class="page-title"><div class="eyebrow">${kicker}</div><h1>${title}</h1>${subtitle ? `<p class="lead">${subtitle}</p>` : ""}</div>`;
@@ -144,7 +144,7 @@ function host() {
     encodeURIComponent(client.invites[sellerQR] || "");
   let center = "";
   if (state.phase === "lobby")
-    center = `<div class="host-grid"><section class="card qr-card"><h2>Everyone except the three sellers</h2>${qr(customerURL, "Scan to join as a customer")}<div class="room-code">${state.code}</div><p>Enter a name. Leave this screen open.</p></section><section><h2>Run your classroom market.</h2><ol class="run-list"><li>Customers join and choose a spending range in INR.</li><li>They privately choose their PC preferences.</li><li>Invite three sellers using their separate QR codes.</li><li>Run the first market with no customer insights.</li><li>Reveal anonymous insights. Repeat with the same budgets.</li></ol><p class="note">Individual budget answers stay private. Customer joining closes when you start the survey.</p></section></div>`;
+    center = `<div class="host-grid"><section class="card qr-card"><h2>Everyone except the three sellers</h2>${qr(customerURL, "Scan to join as a customer")}<div class="room-code">${state.code}</div><p>Enter a name. Leave this screen open.</p></section><section><h2>Run your classroom market.</h2><ol class="run-list"><li>Customers join and choose a spending range in INR.</li><li>They privately choose their PC preferences.</li><li>Invite three sellers using their separate QR codes.</li><li>Run one market with no customer insights.</li><li>Finish by revealing anonymous customer insights and seller profits.</li></ol><p class="note">Individual budget answers stay private. Customer joining closes when you start the survey.</p></section></div>`;
   else if (state.phase === "reaction")
     center = `<section class="card"><h2>The class is choosing its budgets.</h2><p>Advance whenever you are ready; unfinished responses do not block the session. Customers choose their PC priorities after selecting a budget.</p>${stats(
       [
@@ -153,7 +153,7 @@ function host() {
       ],
     )}<p class="note">If you move on early, unanswered budgets are excluded from the survey totals.</p></section>`;
   else if (state.phase === "plan1")
-    center = `<div class="host-grid"><section class="card qr-card"><h2>Invite the three sellers</h2><div class="tabs">${[0, 1, 2].map((n) => btn("Seller " + (n + 1), "seller-qr-" + n, sellerQR === n ? "active" : "ghost")).join("")}</div>${qr(sellerURL, "Seller " + (sellerQR + 1) + " · one person per invitation")}<p class="fine">Display each QR to its seller. Claimed invitations cannot create another seat.</p></section><section class="card"><h2>Let them make their guesses.</h2><p>Each seller chooses which components to offer and sets prices. Every offered component has unlimited supply.</p><p>Profit is the margin earned on actual sales. There are no inventory costs or supply shortages.</p>${sellerList()}<p class="note">Sellers see neither customer budgets nor preferences in round one.</p></section></div>`;
+    center = `<div class="host-grid"><section class="card qr-card"><h2>Invite the three sellers</h2><div class="tabs">${[0, 1, 2].map((n) => btn("Seller " + (n + 1), "seller-qr-" + n, sellerQR === n ? "active" : "ghost")).join("")}</div>${qr(sellerURL, "Seller " + (sellerQR + 1) + " · one person per invitation")}<p class="fine">Display each QR to its seller. Claimed invitations cannot create another seat.</p></section><section class="card"><h2>Let them make their guesses.</h2><p>Each seller chooses which components to offer and sets prices. Every offered component has unlimited supply.</p><p>Profit is the margin earned on actual sales. There are no inventory costs or supply shortages.</p>${sellerList()}<p class="note">Sellers see neither customer budgets nor preferences during the market.</p></section></div>`;
   else if (state.phase.startsWith("shop"))
     center = `<section class="card"><h2>The market is open.</h2>${stats([
       [`${c.finished}/${c.customers}`, "customers finished"],
@@ -170,11 +170,11 @@ function host() {
   const nextNames = {
     lobby: "Start the budget survey",
     reaction: "Finish survey · invite sellers",
-    plan1: "Open market one",
-    shop1: "Close market · show results",
-    result1: "Reveal insights · plan round two",
-    plan2: "Open market two",
-    shop2: "Finish · compare both rounds",
+    plan1: "Open the market",
+    shop1: "Finish · reveal insights & profits",
+    result1: "Show insights & profits",
+    plan2: "Finish · show insights & profits",
+    shop2: "Finish · show insights & profits",
   };
   return (
     title("PRESENTER · ROOM " + state.code, PHASE_LABELS[state.phase]) +
@@ -233,7 +233,7 @@ function buildList(build) {
 function reactionScreen() {
   const p = state.me;
   if (!p.budgetChoice) {
-    return `<section class="budget-survey"><div class="eyebrow">YOUR NEXT COMPUTER · INR</div><h1>How much would you spend on your next computer?</h1><img class="budget-hero" src="${import.meta.env.BASE_URL}hero.webp" alt="A complete desktop PC"><div class="budget-options">${BUDGET_OPTIONS.map((o, i) => `<button data-budget="${o.id}" class="component-option choice-${i % 3} ${budgetPick === o.id ? "selected" : ""}" aria-pressed="${budgetPick === o.id}"><b>${o.label}</b><span>${budgetPick === o.id ? "✓" : "→"}</span></button>`).join("")}</div><p>Your answer stays private in round one. Sellers see anonymous totals in round two.</p><button class="button primary" data-action="save-budget" ${!budgetPick || busy ? "disabled" : ""}>Next →</button></section>`;
+    return `<section class="budget-survey"><div class="eyebrow">YOUR NEXT COMPUTER · INR</div><h1>How much would you spend on your next computer?</h1><img class="budget-hero" src="${import.meta.env.BASE_URL}hero.webp" alt="A complete desktop PC"><div class="budget-options">${BUDGET_OPTIONS.map((o, i) => `<button data-budget="${o.id}" class="component-option choice-${i % 3} ${budgetPick === o.id ? "selected" : ""}" aria-pressed="${budgetPick === o.id}"><b>${o.label}</b><span>${budgetPick === o.id ? "✓" : "→"}</span></button>`).join("")}</div><p>Your answer stays private during the market. Sellers see anonymous totals at the final reveal.</p><button class="button primary" data-action="save-budget" ${!budgetPick || busy ? "disabled" : ""}>Next →</button></section>`;
   }
   if (prefKey !== p.id + ":" + p.budgetChoice) {
     prefKey = p.id + ":" + p.budgetChoice;
@@ -263,7 +263,7 @@ function seller() {
       title(
         "SELLER · " + esc(p.name),
         "Your market is coming.",
-        "The class is choosing its budgets and preferences. Answers are private in round one.",
+        "The class is choosing its budgets and preferences. Answers are private during the market.",
       ) +
       `<section class="card"><h2>Your job: make the most profit.</h2><p>Choose components and prices that customers want. Supply is unlimited; profit comes from the margin on each sale.</p></section>`
     );
@@ -276,8 +276,8 @@ function seller() {
       title(
         "SELLER · " + esc(p.name),
         state.phase === "result1"
-          ? "What did the market tell you?"
-          : "Did knowing more change your business?",
+          ? "Customer insights & profits"
+          : "Customer insights & profits",
       ) + results()
     );
   if (state.phase.startsWith("shop"))
@@ -358,7 +358,7 @@ function market() {
           [money(state.order?.total || 0), "spent (INR)"],
           [money(p.budget - (state.order?.total || 0)), "remaining (INR)"],
         ],
-      )}<p>${state.round === 1 ? "Your original budget will return for round two." : "Both markets are complete. The results are next."}</p></section>`
+      )}<p>Your choices are complete. The presenter will reveal customer insights and seller profits next.</p></section>`
     );
   return buildScreen("customer");
 }
@@ -369,22 +369,8 @@ function cartTotal() {
   );
 }
 function results() {
-  const rs = state.results,
-    final = !!rs[2];
-  return `<section class="results"><div class="section-heading"><h2>${final ? "Did insight improve profit?" : "The first market, by the numbers."}</h2><p>${final ? "Same customers. Same budgets. Unlimited supply. Compare what actually happened." : "Prices, offered components and customer choices all shaped this result."}</p></div><div class="result-grid">${state.sellers
-    .map((s) => {
-      const a = rs[1]?.sellers.find((x) => x.id === s.id),
-        b = rs[2]?.sellers.find((x) => x.id === s.id);
-      return `<article class="card result-card"><span class="eyebrow">${esc(s.name)}</span><h3>${money((b || a)?.profit)} <small>profit (INR)</small></h3>${a ? `<div class="stock-line"><span>Round 1 · blind</span><b>${money(a.profit)}</b></div>` : ""}${b ? `<div class="stock-line"><span>Round 2 · informed</span><b>${money(b.profit)}</b></div><div class="profit-change ${b.profit - a.profit >= 0 ? "positive" : "negative"}">${b.profit >= a.profit ? "+" : ""}${money(b.profit - a.profit)} change</div>` : ""}<p class="fine">${(b || a)?.sold || 0} parts sold in ${b ? "round 2" : "round 1"}</p></article>`;
-    })
-    .join("")}</div>${Object.entries(rs)
-    .map(
-      ([r, x]) =>
-        `<p class="result-summary">Round ${r}: <b>${x.buyers}/${x.totalCustomers}</b> customers bought a complete PC. <b>${x.matchedParts}</b> purchased parts matched their original wishlists.</p>`,
-    )
-    .join(
-      "",
-    )}<section class="discussion card"><div class="eyebrow">ASK THE ROOM</div><h2>${final ? "Which decision changed because you understood the customer?" : "What did you assume—and what surprised you?"}</h2><p>${final ? "Better information can improve decisions, but it does not guarantee more profit. Competition, component choices, prices and learning from the first round also matter." : "Did you offer what people wanted, at prices they could afford? What would you want to know before making your next offer?"}</p>${final ? "<p>Compare total market profit as well as individual winners. This classroom experiment illustrates a mechanism; it is not proof that information alone caused the change.</p>" : ""}</section></section>`;
+ const result=state.results[1];
+ return `<section class="results"><div class="section-heading"><h2>Seller profits</h2><p>One market. Here is how the sellers’ offers matched customer choices.</p></div><div class="result-grid">${state.sellers.map(s=>{const r=result?.sellers.find(x=>x.id===s.id);return `<article class="card result-card"><span class="eyebrow">${esc(s.name)}</span><h3>${money(r?.profit)} <small>profit (INR)</small></h3><p>${r?.sold||0} components sold</p><p class="fine">Sales ${money(r?.revenue)} · component costs ${money(r?.spend)}</p></article>`;}).join('')}</div>${result?`<p class="result-summary"><b>${result.buyers}/${result.totalCustomers}</b> customers completed a PC. <b>${result.matchedParts}</b> purchased parts matched their wishlists.</p>`:''}${insightPanel()}<section class="discussion card"><div class="eyebrow">THE CUSTOMER IN THE BOARDROOM</div><h2>What would you have decided differently if you had known this?</h2><p>Compare customer budgets and preferences with what the sellers offered. Which assumptions matched the class, and which missed the mark?</p><p>The lesson: bring customer evidence into business decisions. We end with reflection; this single round does not measure how much insights would increase profit.</p></section></section>`;
 }
 function ask(message) {
   return new Promise((resolve) => {

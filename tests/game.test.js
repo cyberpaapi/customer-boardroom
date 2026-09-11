@@ -94,7 +94,7 @@ test("seller privacy before round 2 and anonymous insight afterwards", () => {
   assert.equal(v.roster, undefined);
   assert.ok(!JSON.stringify(v).includes("1234"));
   assert.ok(!JSON.stringify(v).includes("111"));
-  s.phase = "plan2";
+  s.phase = "final";
   const x = view(s, "s0");
   assert.equal(x.insights.count, 2);
   assert.equal(
@@ -143,32 +143,19 @@ test("overspending is rejected and unlimited offers never sell out", () => {
   apply(s, "c0", "BUY", { lines: lines() });
   assert.equal(shopStats(s, "s0").sold, 10);
 });
-test("round 2 restores same budget and wishlist, clears offers and passes", () => {
-  const s = toPlan();
-  stock(s);
-  apply(s, "h", "NEXT", { force: true });
-  apply(s, "c0", "BUY", { lines: lines() });
-  apply(s, "c1", "PASS");
-  apply(s, "h", "NEXT");
-  const b = s.players[1].budget;
-  apply(s, "h", "NEXT");
-  assert.equal(s.phase, "plan2");
-  assert.equal(s.players[1].budget, b);
-  assert.deepEqual(s.offers, {});
-  assert.equal(s.players[1].done, false);
-  assert.deepEqual(s.players[1].wishlist, blankBuild());
-  assert.equal(s.results[1].customers[0].match, 5);
+test("one market ends with profits and insights for all roles",()=>{
+ const s=toPlan();stock(s);assert.equal(view(s,'s0').insights,undefined);
+ apply(s,'h','NEXT');apply(s,'c0','BUY',{lines:lines()});apply(s,'h','NEXT');
+ assert.equal(s.phase,'final');assert.equal(Object.keys(s.results).length,1);
+ for(const role of ['h','c0','s0'])assert.ok(view(s,role).insights);
+ assert.equal(view(s,'s0').results[1].sellers.find(x=>x.id==='s0').profit,100);
+ assert.throws(()=>apply(s,'h','NEXT'));
 });
-test("both markets complete, Force End and replay recover every phase", () => {
+test("single market completes, Force End and replay recover every phase", () => {
   const s = toPlan();
-  for (let i = 0; i < 2; i++) {
-    stock(s);
-    apply(s, "h", "NEXT", { force: true });
-    apply(s, "h", "NEXT", { force: true });
-    if (!i) apply(s, "h", "NEXT");
-  }
+  stock(s);apply(s,'h','NEXT');apply(s,'h','NEXT');
   assert.equal(s.phase, "final");
-  assert.equal(Object.keys(s.results).length, 2);
+  assert.equal(Object.keys(s.results).length, 1);
   apply(s, "h", "PLAY_AGAIN");
   assert.equal(s.phase, "lobby");
   assert.deepEqual(s.results, {});
@@ -210,7 +197,7 @@ test("budget survey records exact range, validates input and keeps answers priva
   apply(s, "h", "NEXT", { force: true });
   addPlayer(s, { id: "s0", name: "Seller", role: "seller" });
   assert.ok(!JSON.stringify(view(s, "s0")).includes("150to200"));
-  s.phase = "plan2";
+  s.phase = "final";
   s.round = 2;
   const v = view(s, "s0");
   assert.equal(v.insights.bands[2].count, 1);
@@ -222,7 +209,7 @@ test("budget survey records exact range, validates input and keeps answers priva
 
 test('presenter advances immediately through every phase without waiting for participants',()=>{
  const s=setup();
- for(const phase of ['reaction','plan1','shop1','result1','plan2','shop2','final']){
+ for(const phase of ['reaction','plan1','shop1','final']){
  apply(s,'h','NEXT');assert.equal(s.phase,phase);
  }
  assert.equal(s.players[1].budget,600);

@@ -1,6 +1,9 @@
+## Single-round classroom session
+Budget survey → PC preferences → three sellers choose offers → customers buy → presenter clicks **Finish · reveal insights & profits**. The final screen shows seller profits, anonymous customer budget/preference totals, and a discussion prompt. There is no second market. Presenter advancement never waits for participants. Customer insights stay hidden until the final reveal.
+
 ## Current classroom flow
 The reaction game has been replaced by a private spending survey: Under ₹1,00,000; ₹1,00,000–₹1,50,000; ₹1,50,000–₹2,00,000; ₹2,00,000–₹2,50,000; ₹2,50,000+.
-For the subsequent purchase exercise these map to clearly disclosed allowances of ₹75,000, ₹1,25,000, ₹1,75,000, ₹2,25,000 and ₹3,00,000. Insights count the actual selected ranges; unanswered surveys are excluded. All visible monetary amounts are INR. Internally, one money unit equals ₹100. Basic parts remain free and supply unlimited. Two rounds and three private seller interfaces remain.
+For the subsequent purchase exercise these map to clearly disclosed allowances of ₹75,000, ₹1,25,000, ₹1,75,000, ₹2,25,000 and ₹3,00,000. Insights count the actual selected ranges; unanswered surveys are excluded. All visible monetary amounts are INR. Internally, one money unit equals ₹100. Basic parts remain free and supply unlimited. One round and three private seller interfaces remain.
 
 # Customer in the Boardroom
 

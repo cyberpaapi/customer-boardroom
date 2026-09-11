@@ -100,23 +100,18 @@ assert.equal(bought.filter((x) => x.status === 200).length, 2);
 const winner = cs[0];
 assert.equal((await snap(ss[0])).myStats.profit, 200);
 assert.equal((await snap(winner)).order.total, 360);
-await act(h, "NEXT");
-await act(h, "NEXT");
-assert.equal((await snap(ss[0])).insights.count, 2);
-assert.equal((await snap(winner)).me.budget, 600);
-assert.equal((await snap(winner)).me.done, false);
-for (const s of ss) await act(s, "SAVE_SHOP", { offers });
-await act(h, "NEXT");
-const id = crypto.randomUUID();
-assert.equal((await act(cs[0], "PASS", {}, id)).status, 200);
-assert.equal((await act(cs[0], "PASS", {}, id)).duplicate, true);
-await act(cs[1], "PASS");
-await act(h, "NEXT");
-assert.equal((await snap(h)).phase, "final");
+const id=crypto.randomUUID();
+assert.equal((await act(h,'NEXT',{},id)).status,200);
+assert.equal((await act(h,'NEXT',{},id)).duplicate,true);
+assert.equal((await snap(h)).phase,'final');
+assert.equal((await snap(ss[0])).insights.count,2);
+assert.equal((await snap(cs[0])).insights.count,2);
+assert.equal(Object.keys((await snap(h)).results).length,1);
+assert.equal((await act(h,'NEXT')).status,400);
 await act(h, "PLAY_AGAIN");
 assert.equal((await snap(h)).phase, "lobby");
 controller.abort();
 await reading;
 console.log(
-  "PASS durable room join, roles, redaction, live propagation, unlimited concurrent sales, idempotency, both rounds and replay",
+  "PASS durable room join, roles, redaction, live propagation, unlimited concurrent sales, idempotency, single-round reveal and replay",
 );
